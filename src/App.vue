@@ -136,6 +136,13 @@
                 <RouterLink
                   class="list-group-item list-group-item-action"
                   active-class="active"
+                  to="/image-format-converter"
+                >
+                  🔄 Image Format Converter
+                </RouterLink>
+                <RouterLink
+                  class="list-group-item list-group-item-action"
+                  active-class="active"
                   to="/ocr"
                 >
                   👁️ OCR

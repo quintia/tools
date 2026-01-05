@@ -61,6 +61,12 @@ const categories = [
     title: "Graphics & Images",
     items: [
       { icon: "🖼️", name: "Image Resize", path: "/image-resize", description: "Resize images while keeping quality in check." },
+      {
+        icon: "🔄",
+        name: "Image Format Converter",
+        path: "/image-format-converter",
+        description: "Convert between PNG, JPEG, WebP, AVIF, HEIC, and more.",
+      },
       { icon: "👁️", name: "OCR", path: "/ocr", description: "Extract text from images using OCR." },
       { icon: "🖼️", name: "SVG → PNG", path: "/svg-png", description: "Export SVG artwork to high-quality PNG files." },
       { icon: "🧜‍♀️", name: "Mermaid", path: "/mermaid", description: "Generate diagrams from Mermaid markdown." },

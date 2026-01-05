@@ -65,6 +65,10 @@ const routes = [
     component: () => import("./views/image-resize.vue"),
   },
   {
+    path: "/image-format-converter",
+    component: () => import("./views/image-format-converter.vue"),
+  },
+  {
     path: "/ocr",
     component: () => import("./views/ocr.vue"),
   },
