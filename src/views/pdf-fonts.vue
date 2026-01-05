@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import * as mupdf from "mupdf";
+import { ref, onMounted, onUnmounted } from "vue";
+import * as Comlink from 'comlink';
+import type { MupdfWorker } from '../workers/mupdf-worker';
 import PdfViewer from "../components/PdfViewer.vue";
 import ToolHeader from "../components/ToolHeader.vue";
 import ToolCard from "../components/ToolCard.vue";
@@ -21,6 +22,18 @@ const fileName = ref<string | null>(null);
 const fontUsages = ref<FontUsage[]>([]);
 const isProcessing = ref(false);
 
+let worker: Worker | null = null;
+let api: Comlink.Remote<MupdfWorker> | null = null;
+
+onMounted(() => {
+  worker = new Worker(new URL('../workers/mupdf-worker.ts', import.meta.url), { type: 'module' });
+  api = Comlink.wrap<MupdfWorker>(worker);
+});
+
+onUnmounted(() => {
+  worker?.terminate();
+});
+
 const handleFileChange = (event: Event) => {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
@@ -37,55 +50,15 @@ const handleFileChange = (event: Event) => {
   }
 };
 
-const analyzeFonts = () => {
-  if (!fileData.value) return;
+const analyzeFonts = async () => {
+  if (!fileData.value || !api) return;
 
   isProcessing.value = true;
   fontUsages.value = [];
 
   try {
-    const doc = mupdf.Document.openDocument(fileData.value, "application/pdf");
-    const pageCount = doc.countPages();
-    const fonts = new Map<string, FontUsage & { pageSet: Set<number> }>();
-
-    for (let i = 0; i < pageCount; i++) {
-      const page = doc.loadPage(i);
-      const stext = page.toStructuredText();
-
-      stext.walk({
-        onChar(_c, _origin, font) {
-          const name = font.getName();
-          let entry = fonts.get(name);
-          if (!entry) {
-            entry = {
-              name,
-              isBold: font.isBold(),
-              isItalic: font.isItalic(),
-              isSerif: font.isSerif(),
-              isMono: font.isMono(),
-              count: 0,
-              pages: [],
-              pageSet: new Set<number>(),
-            };
-            fonts.set(name, entry);
-          }
-
-          entry.count += 1;
-          entry.pageSet.add(i + 1);
-        },
-      });
-
-      stext.destroy();
-    }
-
-    fontUsages.value = Array.from(fonts.values())
-      .map(({ pageSet, ...rest }) => ({
-        ...rest,
-        pages: Array.from(pageSet).sort((a, b) => a - b),
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-
-    doc.destroy();
+    const result = await api.getFonts(fileData.value);
+    fontUsages.value = result.sort((a, b) => a.name.localeCompare(b.name));
   } catch (error) {
     console.error("PDF Font Analysis Error:", error);
     alert("An error occurred while reading fonts from the PDF.");

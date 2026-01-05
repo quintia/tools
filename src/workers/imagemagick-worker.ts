@@ -1,4 +1,5 @@
 import { ImageMagick, Magick, MagickFormat, initializeImageMagick } from "@imagemagick/magick-wasm";
+import * as Comlink from "comlink";
 
 const wasmUrl = new URL(
   "../../node_modules/@imagemagick/magick-wasm/dist/magick.wasm",
@@ -39,51 +40,46 @@ export const requestedFormats: FormatOption[] = [
 ];
 
 let initializePromise: Promise<void> | null = null;
-let wasmBinary: ArrayBuffer | null = null;
 
-const loadWasmBinary = async (): Promise<ArrayBuffer> => {
-  if (wasmBinary) return wasmBinary;
-
-  const response = await fetch(wasmUrl);
-  wasmBinary = await response.arrayBuffer();
-  return wasmBinary;
-};
-
-export const ensureImageMagickInitialized = async () => {
+const ensureImageMagickInitialized = async () => {
   if (!initializePromise) {
     initializePromise = (async () => {
-      const wasm = await loadWasmBinary();
+      const response = await fetch(wasmUrl);
+      const wasm = await response.arrayBuffer();
       await initializeImageMagick(wasm);
     })();
   }
   return initializePromise;
 };
 
+const imagemagickWorker = {
+  async getWritableFormatOptions(): Promise<FormatOption[]> {
+    await ensureImageMagickInitialized();
+    const writableFormats = new Set(
+      Magick.supportedFormats
+        .filter((format) => format.supportsWriting && format.supportsReading)
+        .map((format) => format.format)
+    );
+    return requestedFormats.filter((candidate) => writableFormats.has(candidate.format));
+  },
 
-export const getSupportedFormats = async (): Promise<MagickFormat[]> => {
-  await ensureImageMagickInitialized();
-  return Magick.supportedFormats
-    .filter((format) => format.supportsWriting && format.supportsReading)
-    .map((format) => format.format);
+  async convert(data: Uint8Array, format: MagickFormat): Promise<Uint8Array> {
+    await ensureImageMagickInitialized();
+    return ImageMagick.read(data, (image) =>
+      image.write(format, (converted) => new Uint8Array(converted)),
+    );
+  },
+
+  async readMetadata(data: Uint8Array): Promise<{ width: number; height: number; format: MagickFormat }> {
+    await ensureImageMagickInitialized();
+    return ImageMagick.read(data, (image) => ({
+      width: image.width,
+      height: image.height,
+      format: image.format,
+    }));
+  },
 };
 
-export const convertFormat = async (
-  data: Uint8Array,
-  format: MagickFormat,
-): Promise<Uint8Array> => {
-  await ensureImageMagickInitialized();
-  return ImageMagick.read(data, (image) =>
-    image.write(format, (converted) => new Uint8Array(converted)),
-  );
-};
+export type ImagemagickWorker = typeof imagemagickWorker;
 
-export const readMetadata = async (
-  data: Uint8Array,
-): Promise<{ width: number; height: number; format: MagickFormat }> => {
-  await ensureImageMagickInitialized();
-  return ImageMagick.read(data, (image) => ({
-    width: image.width,
-    height: image.height,
-    format: image.format,
-  }));
-};
+Comlink.expose(imagemagickWorker);

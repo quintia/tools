@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import * as mupdf from 'mupdf';
+import { ref, onMounted, onUnmounted } from 'vue';
+import * as Comlink from 'comlink';
+import type { MupdfWorker } from '../workers/mupdf-worker';
 import PdfViewer from '../components/PdfViewer.vue';
 import ToolHeader from "../components/ToolHeader.vue";
 import ToolCard from "../components/ToolCard.vue";
@@ -12,6 +13,18 @@ const fileData = ref<Uint8Array | null>(null);
 const fileName = ref<string | null>(null);
 const resultText = ref("");
 const isProcessing = ref(false);
+
+let worker: Worker | null = null;
+let api: Comlink.Remote<MupdfWorker> | null = null;
+
+onMounted(() => {
+  worker = new Worker(new URL('../workers/mupdf-worker.ts', import.meta.url), { type: 'module' });
+  api = Comlink.wrap<MupdfWorker>(worker);
+});
+
+onUnmounted(() => {
+  worker?.terminate();
+});
 
 const handleFileChange = (event: Event) => {
   const target = event.target as HTMLInputElement;
@@ -29,25 +42,14 @@ const handleFileChange = (event: Event) => {
 };
 
 const extractText = async () => {
-  if (!fileData.value) return;
+  if (!fileData.value || !api) return;
 
   isProcessing.value = true;
   resultText.value = "";
 
   try {
-    const doc = mupdf.Document.openDocument(fileData.value, "application/pdf");
-    const pageCount = doc.countPages();
-    let combinedText = "";
-
-    for (let i = 0; i < pageCount; i++) {
-      const page = doc.loadPage(i);
-      const stext = page.toStructuredText();
-      combinedText += `--- Page ${i + 1} ---\n${stext.asText()}\n\n`;
-      stext.destroy();
-    }
-
+    const combinedText = await api.extractText(fileData.value);
     resultText.value = combinedText;
-    doc.destroy();
   } catch (error) {
     console.error("PDF Text Extraction Error:", error);
     alert("An error occurred while extracting text from the PDF.");

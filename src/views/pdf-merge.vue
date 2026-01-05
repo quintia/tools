@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import * as mupdf from "mupdf";
+import { ref, onMounted, onUnmounted } from "vue";
+import * as Comlink from 'comlink';
+import type { MupdfWorker } from '../workers/mupdf-worker';
 import PdfViewer from "../components/PdfViewer.vue";
 import ToolHeader from "../components/ToolHeader.vue";
 import ToolCard from "../components/ToolCard.vue";
@@ -17,6 +18,18 @@ interface FileItem {
 const files = ref<FileItem[]>([]);
 const isProcessing = ref(false);
 const downloadUrl = ref<string | null>(null);
+
+let worker: Worker | null = null;
+let api: Comlink.Remote<MupdfWorker> | null = null;
+
+onMounted(() => {
+  worker = new Worker(new URL('../workers/mupdf-worker.ts', import.meta.url), { type: 'module' });
+  api = Comlink.wrap<MupdfWorker>(worker);
+});
+
+onUnmounted(() => {
+  worker?.terminate();
+});
 
 const handleFileChange = async (event: Event) => {
   const target = event.target as HTMLInputElement;
@@ -62,27 +75,13 @@ const moveFile = (index: number, direction: number) => {
 };
 
 const mergePdfs = async () => {
-  if (files.value.length < 2) return;
+  if (files.value.length < 2 || !api) return;
 
   isProcessing.value = true;
   try {
-    const outDoc = new mupdf.PDFDocument();
-
-    for (const file of files.value) {
-      const srcDoc = mupdf.Document.openDocument(file.data, "application/pdf").asPDF();
-      if (srcDoc) {
-        const pageCount = srcDoc.countPages();
-        for (let i = 0; i < pageCount; i++) {
-          outDoc.graftPage(-1, srcDoc, i);
-        }
-        srcDoc.destroy();
-      }
-    }
-
-    const res = outDoc.saveToBuffer();
-    const blob = new Blob([res.asUint8Array() as any], { type: "application/pdf" });
+    const result = await api.mergePdfs(files.value.map(f => f.data));
+    const blob = new Blob([result as any], { type: "application/pdf" });
     downloadUrl.value = URL.createObjectURL(blob);
-    outDoc.destroy();
   } catch (error) {
     console.error("PDF Merge Error:", error);
     alert("An error occurred while merging PDFs.");

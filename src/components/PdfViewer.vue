@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
-import * as mupdf from 'mupdf';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
+import * as Comlink from 'comlink';
+import type { MupdfWorker } from '../workers/mupdf-worker';
 import LoadingOverlay from './LoadingOverlay.vue';
 
 const props = defineProps<{
@@ -11,8 +12,21 @@ const pages = ref<string[]>([]);
 const isRendering = ref(false);
 const error = ref<string | null>(null);
 
+let worker: Worker | null = null;
+let api: Comlink.Remote<MupdfWorker> | null = null;
+
+onMounted(() => {
+  worker = new Worker(new URL('../workers/mupdf-worker.ts', import.meta.url), { type: 'module' });
+  api = Comlink.wrap<MupdfWorker>(worker);
+  if (props.data) renderPdf();
+});
+
+onUnmounted(() => {
+  worker?.terminate();
+});
+
 const renderPdf = async () => {
-  if (!props.data) {
+  if (!props.data || !api) {
     pages.value = [];
     return;
   }
@@ -22,35 +36,25 @@ const renderPdf = async () => {
   pages.value = [];
 
   try {
-    const doc = mupdf.Document.openDocument(props.data, "application/pdf");
-    const pageCount = doc.countPages();
+    // We use a scale of 1.5 for a balance between performance and readability
+    const thumbs = await api.renderThumbnails(props.data, 1.5);
     const renderedPages: string[] = [];
 
-    for (let i = 0; i < pageCount; i++) {
-      const page = doc.loadPage(i);
-      const pixmap = page.toPixmap(mupdf.Matrix.identity, mupdf.ColorSpace.DeviceRGB, true);
-
-      const width = pixmap.getWidth();
-      const height = pixmap.getHeight();
-
+    for (const thumb of thumbs) {
       const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
+      canvas.width = thumb.width;
+      canvas.height = thumb.height;
       const ctx = canvas.getContext("2d");
 
       if (ctx) {
-        const samples = new Uint8ClampedArray(pixmap.getPixels());
-        const imageData = new ImageData(samples, width, height);
+        const samples = new Uint8ClampedArray(thumb.pixels);
+        const imageData = new ImageData(samples, thumb.width, thumb.height);
         ctx.putImageData(imageData, 0, 0);
         renderedPages.push(canvas.toDataURL());
       }
-
-      pixmap.destroy();
-      page.destroy();
     }
 
     pages.value = renderedPages;
-    doc.destroy();
   } catch (err) {
     console.error("PDF Rendering Error:", err);
     error.value = "Failed to render PDF document.";
@@ -59,7 +63,6 @@ const renderPdf = async () => {
   }
 };
 
-onMounted(renderPdf);
 watch(() => props.data, renderPdf);
 </script>
 

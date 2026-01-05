@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import * as mupdf from 'mupdf';
+import { ref, onMounted, onUnmounted } from 'vue';
+import * as Comlink from 'comlink';
+import type { MupdfWorker } from '../workers/mupdf-worker';
 import PdfViewer from '../components/PdfViewer.vue';
 import ToolHeader from "../components/ToolHeader.vue";
 import ToolCard from "../components/ToolCard.vue";
@@ -34,6 +35,18 @@ const formats: Record<string, [number, number]> = {
   "Legal": [612, 1008],
 };
 
+let worker: Worker | null = null;
+let api: Comlink.Remote<MupdfWorker> | null = null;
+
+onMounted(() => {
+  worker = new Worker(new URL('../workers/mupdf-worker.ts', import.meta.url), { type: 'module' });
+  api = Comlink.wrap<MupdfWorker>(worker);
+});
+
+onUnmounted(() => {
+  worker?.terminate();
+});
+
 const handleFileChange = (event: Event) => {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
@@ -50,41 +63,18 @@ const handleFileChange = (event: Event) => {
 };
 
 const resizePdf = async () => {
-  if (!fileData.value) return;
+  if (!fileData.value || !api) return;
 
   isProcessing.value = true;
   try {
-    const srcDoc = mupdf.Document.openDocument(fileData.value, "application/pdf").asPDF();
-    if (!srcDoc) throw new Error("Could not open source PDF");
-
-    const outDoc = new mupdf.PDFDocument();
-    const pageCount = srcDoc.countPages();
-
     let [tw, th] = formats[targetFormat.value];
     if (orientation.value === "landscape") {
       [tw, th] = [th, tw];
     }
 
-    for (let i = 0; i < pageCount; i++) {
-      // Graft page into new document
-      outDoc.graftPage(-1, srcDoc, i);
-
-      // Get the grafted page to adjust its box
-      const outPage = outDoc.loadPage(i);
-
-      // Calculate scaling to fit (optional, but setting MediaBox is primary)
-      // Note: Truly scaling content requires editing the content stream operators
-      // which is complex in WASM. For now, we set the MediaBox which is the
-      // standard "Resize" behavior in many tools.
-      outPage.setPageBox("MediaBox", [0, 0, tw, th]);
-    }
-
-    const res = outDoc.saveToBuffer();
-    const blob = new Blob([res.asUint8Array() as any], { type: "application/pdf" });
+    const result = await api.resizePdf(fileData.value, tw, th);
+    const blob = new Blob([result as any], { type: "application/pdf" });
     downloadUrl.value = URL.createObjectURL(blob);
-
-    outDoc.destroy();
-    srcDoc.destroy();
   } catch (error) {
     console.error("PDF Resize Error:", error);
     alert("An error occurred during resizing.");

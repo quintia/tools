@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import Tesseract from "tesseract.js";
-import * as mupdf from "mupdf";
-import { calculatePdfProgress, formatOcrResult } from "../utils/ocr";
+import { ref, onMounted, onUnmounted } from "vue";
+import * as Comlink from "comlink";
+import type { TesseractWorker } from "../workers/tesseract-worker";
+import type { MupdfWorker } from "../workers/mupdf-worker";
 import PdfViewer from "../components/PdfViewer.vue";
 import ToolHeader from "../components/ToolHeader.vue";
 import ToolCard from "../components/ToolCard.vue";
@@ -67,6 +67,32 @@ const supportedLanguages = [
   { code: "vie", name: "Vietnamese" },
 ];
 
+let tWorker: Worker | null = null;
+let tApi: Comlink.Remote<TesseractWorker> | null = null;
+let mWorker: Worker | null = null;
+let mApi: Comlink.Remote<MupdfWorker> | null = null;
+
+onMounted(() => {
+  tWorker = new Worker(new URL("../workers/tesseract-worker.ts", import.meta.url), { type: "module" });
+  tApi = Comlink.wrap<TesseractWorker>(tWorker);
+  mWorker = new Worker(new URL("../workers/mupdf-worker.ts", import.meta.url), { type: "module" });
+  mApi = Comlink.wrap<MupdfWorker>(mWorker);
+});
+
+onUnmounted(() => {
+  tWorker?.terminate();
+  mWorker?.terminate();
+});
+
+const calculatePdfProgress = (currentPage: number, totalPages: number, pageProgress: number) => {
+  if (totalPages <= 0) return 0;
+  return (currentPage + pageProgress) / totalPages;
+};
+
+const formatOcrResult = (pages: { pageNumber: number; text: string }[]) => {
+  return pages.map((p) => `--- Page ${p.pageNumber} ---\n${p.text}\n\n`).join("").trim();
+};
+
 const handleFileChange = (event: Event) => {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
@@ -93,81 +119,47 @@ const handleFileChange = (event: Event) => {
 };
 
 const recognizeText = async () => {
-  if (!fileData.value) return;
+  if (!fileData.value || !tApi || !mApi) return;
 
   isProcessing.value = true;
   result.value = "";
   progress.value = 0;
   status.value = "Initializing...";
 
-  let worker: Tesseract.Worker | null = null;
-  let currentPage = 0;
-  let totalPages = 1;
-
   try {
-    worker = await Tesseract.createWorker(language.value, 3, {
-      workerPath: "/tesseract/worker.min.js",
-      corePath: "/tesseract/",
-      langPath: "/tesseract/lang",
-      logger: (m: Tesseract.LoggerMessage) => {
-        if (m.status === "recognizing text") {
-          progress.value = calculatePdfProgress(
-            currentPage,
-            totalPages,
-            m.progress
-          );
-        }
-        status.value = m.status;
-      },
-    });
-
     if (fileType.value === "application/pdf") {
-      const doc = mupdf.Document.openDocument(fileData.value!, "application/pdf");
-      totalPages = doc.countPages();
+      const totalPages = await mApi.getPageCount(fileData.value);
       const pages: { pageNumber: number; text: string }[] = [];
 
       for (let i = 0; i < totalPages; i++) {
-        currentPage = i;
         status.value = `Processing PDF page ${i + 1} of ${totalPages}...`;
-        const page = doc.loadPage(i);
-        const pixmap = page.toPixmap(
-          mupdf.Matrix.identity,
-          mupdf.ColorSpace.DeviceRGB,
-          true
-        );
-        const width = pixmap.getWidth();
-        const height = pixmap.getHeight();
-
+        const pageImg = await mApi.getPageAsImage(fileData.value, i);
+        
         const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
+        canvas.width = pageImg.width;
+        canvas.height = pageImg.height;
         const ctx = canvas.getContext("2d");
-        if (!ctx) {
-          pixmap.destroy();
-          continue;
-        }
-
-        const samples = new Uint8ClampedArray(pixmap.getPixels());
-        const imageData = new ImageData(samples, width, height);
+        if (!ctx) continue;
+        const imageData = new ImageData(new Uint8ClampedArray(pageImg.pixels), pageImg.width, pageImg.height);
         ctx.putImageData(imageData, 0, 0);
+        const dataUrl = canvas.toDataURL("image/png");
 
-        const pageImage = canvas.toDataURL("image/png");
-
-        const {
-          data: { text },
-        } = await worker.recognize(pageImage);
+        const text = await tApi.recognize(dataUrl, language.value, Comlink.proxy((m: any) => {
+          if (m.status === "recognizing text") {
+            progress.value = calculatePdfProgress(i, totalPages, m.progress);
+          }
+        }));
 
         pages.push({ pageNumber: i + 1, text });
-        pixmap.destroy();
       }
       result.value = formatOcrResult(pages);
-      doc.destroy();
     } else {
-      totalPages = 1;
-      currentPage = 0;
-      const {
-        data: { text },
-      } = await worker.recognize(image.value!);
+      const text = await tApi.recognize(image.value!, language.value, Comlink.proxy((m: any) => {
+        if (m.status === "recognizing text") {
+          progress.value = m.progress;
+        }
+        status.value = m.status;
+      }));
       result.value = text;
     }
     status.value = "Recognition complete";
@@ -176,9 +168,6 @@ const recognizeText = async () => {
     console.error("OCR Error:", error);
     status.value = "Error occurred during recognition";
   } finally {
-    if (worker) {
-      await worker.terminate();
-    }
     isProcessing.value = false;
   }
 };

@@ -1,19 +1,15 @@
 <script setup lang="ts">
 import { MagickFormat } from "@imagemagick/magick-wasm";
-import { ref, computed, watch, onBeforeUnmount } from "vue";
+import { ref, computed, onBeforeUnmount, onMounted } from "vue";
+import * as Comlink from "comlink";
+import type { ImagemagickWorker, FormatOption } from "../workers/imagemagick-worker";
+import type { MupdfWorker } from "../workers/mupdf-worker";
 import ToolCard from "../components/ToolCard.vue";
 import FilePicker from "../components/FilePicker.vue";
 import ToolHeader from "../components/ToolHeader.vue";
 import DownloadLink from "../components/DownloadLink.vue";
 import LoadingOverlay from "../components/LoadingOverlay.vue";
 import PdfViewer from "../components/PdfViewer.vue";
-import { rasterizePdf, imageToPdf } from "../utils/pdf-utils";
-import {
-  convertImageFormat,
-  getWritableFormatOptions,
-  readImageMetadata,
-  type FormatOption,
-} from "../utils/image-conversion";
 
 const availableFormats = ref<FormatOption[]>([]);
 const targetFormat = ref<MagickFormat | null>(null);
@@ -37,10 +33,24 @@ const result = ref<{
 } | null>(null);
 const conversionError = ref("");
 
+let imWorker: Worker | null = null;
+let imApi: Comlink.Remote<ImagemagickWorker> | null = null;
+let muWorker: Worker | null = null;
+let muApi: Comlink.Remote<MupdfWorker> | null = null;
+
+onMounted(async () => {
+  imWorker = new Worker(new URL("../workers/imagemagick-worker.ts", import.meta.url), { type: "module" });
+  imApi = Comlink.wrap<ImagemagickWorker>(imWorker);
+  muWorker = new Worker(new URL("../workers/mupdf-worker.ts", import.meta.url), { type: "module" });
+  muApi = Comlink.wrap<MupdfWorker>(muWorker);
+  await loadFormats();
+});
+
 const loadFormats = async () => {
+  if (!imApi) return;
   loadingFormats.value = true;
   try {
-    const writable = await getWritableFormatOptions();
+    const writable = await imApi.getWritableFormatOptions();
     availableFormats.value = writable;
     if (writable.length > 0) {
       targetFormat.value = writable[0].format;
@@ -55,7 +65,7 @@ const loadFormats = async () => {
 const readFile = async (event: Event) => {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
-  if (!file) return;
+  if (!file || !muApi || !imApi) return;
 
   sourceError.value = "";
   if (result.value?.blobUrl) URL.revokeObjectURL(result.value.blobUrl);
@@ -65,11 +75,11 @@ const readFile = async (event: Event) => {
   sourceName.value = file.name;
   sourcePdfBytes.value = null;
 
-  let processBuffer: any = buffer;
+  let processBuffer: Uint8Array = buffer;
   if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
     sourcePdfBytes.value = buffer;
     try {
-      processBuffer = await rasterizePdf(buffer);
+      processBuffer = await muApi.rasterizePdf(buffer);
     } catch (error) {
       sourceError.value =
         "Failed to rasterize PDF: " + (error instanceof Error ? error.message : String(error));
@@ -80,11 +90,11 @@ const readFile = async (event: Event) => {
 
   if (sourcePreview.value) URL.revokeObjectURL(sourcePreview.value);
   sourcePreview.value = URL.createObjectURL(
-    new Blob([processBuffer], { type: "image/png" }),
+    new Blob([processBuffer as any], { type: "image/png" }),
   );
 
   try {
-    sourceDetails.value = await readImageMetadata(processBuffer);
+    sourceDetails.value = await imApi.readMetadata(processBuffer);
   } catch (error) {
     sourceDetails.value = null;
     sourceError.value = error instanceof Error ? error.message : "Unable to read the image.";
@@ -92,7 +102,7 @@ const readFile = async (event: Event) => {
 };
 
 const convert = async () => {
-  if (!sourceBytes.value || !targetFormat.value || converting.value) return;
+  if (!sourceBytes.value || !targetFormat.value || converting.value || !imApi || !muApi) return;
   converting.value = true;
   conversionError.value = "";
 
@@ -105,17 +115,16 @@ const convert = async () => {
   try {
     let converted: Uint8Array;
     if (targetFormat.value === MagickFormat.Pdf) {
-      // If the source is not already a PNG, convert it to PNG first to be safe for MuPDF
-      const pngBytes = await convertImageFormat(sourceBytes.value, MagickFormat.Png);
-      converted = await imageToPdf(pngBytes, "image/png");
+      const pngBytes = await imApi.convert(sourceBytes.value, MagickFormat.Png);
+      converted = await muApi.imageToPdf(pngBytes, "image/png");
     } else {
-      converted = await convertImageFormat(sourceBytes.value, targetFormat.value);
+      converted = await imApi.convert(sourceBytes.value, targetFormat.value);
     }
 
     const metadata =
       targetFormat.value === MagickFormat.Pdf
         ? { width: sourceDetails.value?.width || 0, height: sourceDetails.value?.height || 0 }
-        : await readImageMetadata(converted);
+        : await imApi.readMetadata(converted);
 
     if (result.value?.blobUrl) URL.revokeObjectURL(result.value.blobUrl);
 
@@ -134,6 +143,13 @@ const convert = async () => {
     converting.value = false;
   }
 };
+
+onBeforeUnmount(() => {
+  if (sourcePreview.value) URL.revokeObjectURL(sourcePreview.value);
+  if (result.value?.blobUrl) URL.revokeObjectURL(result.value.blobUrl);
+  imWorker?.terminate();
+  muWorker?.terminate();
+});
 
 onBeforeUnmount(() => {
   if (sourcePreview.value) URL.revokeObjectURL(sourcePreview.value);

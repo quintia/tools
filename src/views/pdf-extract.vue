@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import * as mupdf from 'mupdf';
+import { ref, onMounted, onUnmounted } from 'vue';
+import * as Comlink from 'comlink';
+import type { MupdfWorker } from '../workers/mupdf-worker';
 import PdfViewer from '../components/PdfViewer.vue';
 import ToolHeader from "../components/ToolHeader.vue";
 import ToolCard from "../components/ToolCard.vue";
@@ -12,6 +13,18 @@ const fileName = ref<string | null>(null);
 const pageRange = ref("1, 3, 5-7");
 const isProcessing = ref(false);
 const downloadUrl = ref<string | null>(null);
+
+let worker: Worker | null = null;
+let api: Comlink.Remote<MupdfWorker> | null = null;
+
+onMounted(() => {
+  worker = new Worker(new URL('../workers/mupdf-worker.ts', import.meta.url), { type: 'module' });
+  api = Comlink.wrap<MupdfWorker>(worker);
+});
+
+onUnmounted(() => {
+  worker?.terminate();
+});
 
 const handleFileChange = (event: Event) => {
   const target = event.target as HTMLInputElement;
@@ -52,14 +65,11 @@ const parsePageRanges = (rangeStr: string, maxPages: number): number[] => {
 };
 
 const extractPages = async () => {
-  if (!fileData.value) return;
+  if (!fileData.value || !api) return;
 
   isProcessing.value = true;
   try {
-    const srcDoc = mupdf.Document.openDocument(fileData.value, "application/pdf").asPDF();
-    if (!srcDoc) throw new Error("Could not open source PDF");
-
-    const totalPages = srcDoc.countPages();
+    const totalPages = await api.getPageCount(fileData.value);
     const selectedIndices = parsePageRanges(pageRange.value, totalPages);
 
     if (selectedIndices.length === 0) {
@@ -67,17 +77,9 @@ const extractPages = async () => {
       return;
     }
 
-    const outDoc = new mupdf.PDFDocument();
-    for (const index of selectedIndices) {
-      outDoc.graftPage(-1, srcDoc, index);
-    }
-
-    const res = outDoc.saveToBuffer();
-    const blob = new Blob([res.asUint8Array() as any], { type: "application/pdf" });
+    const result = await api.extractPages(fileData.value, selectedIndices);
+    const blob = new Blob([result as any], { type: "application/pdf" });
     downloadUrl.value = URL.createObjectURL(blob);
-
-    outDoc.destroy();
-    srcDoc.destroy();
   } catch (error) {
     console.error("PDF Extraction Error:", error);
     alert("An error occurred during extraction.");

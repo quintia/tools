@@ -2,6 +2,8 @@
 import { ref, reactive, onMounted, onUnmounted, watch } from 'vue';
 import { Cropper } from 'vue-advanced-cropper';
 import 'vue-advanced-cropper/dist/style.css';
+import * as Comlink from 'comlink';
+import type { OpencvWorker } from '../workers/opencv-worker';
 import ToolHeader from "../components/ToolHeader.vue";
 import ToolCard from "../components/ToolCard.vue";
 import DownloadLink from "../components/DownloadLink.vue";
@@ -24,29 +26,14 @@ const config = reactive({
 });
 
 let worker: Worker | null = null;
+let api: Comlink.Remote<OpencvWorker> | null = null;
 
 onMounted(() => {
-  worker = new Worker(new URL('../utils/cv-worker.ts', import.meta.url), {
+  worker = new Worker(new URL('../workers/opencv-worker.ts', import.meta.url), {
     type: 'module'
   });
-
-  worker.onmessage = (e) => {
-    const { type, imageData, message } = e.data;
-    if (type === 'READY') {
-      isOpenCvReady.value = true;
-    } else if (type === 'RESULT') {
-      const canvas = document.createElement('canvas');
-      canvas.width = imageData.width;
-      canvas.height = imageData.height;
-      const ctx = canvas.getContext('2d');
-      ctx?.putImageData(imageData, 0, 0);
-      resultImageUrl.value = canvas.toDataURL('image/png');
-      isProcessing.value = false;
-    } else if (type === 'ERROR') {
-      errorMessage.value = message;
-      isProcessing.value = false;
-    }
-  };
+  api = Comlink.wrap<OpencvWorker>(worker);
+  isOpenCvReady.value = true;
 });
 
 onUnmounted(() => {
@@ -84,14 +71,14 @@ const pickColor = (event: MouseEvent) => {
   processImage();
 };
 
-const processImage = () => {
-  if (!sourceImageUrl.value || !isOpenCvReady.value || !worker) return;
+const processImage = async () => {
+  if (!sourceImageUrl.value || !isOpenCvReady.value || !api) return;
 
   isProcessing.value = true;
   errorMessage.value = null;
 
   const img = new Image();
-  img.onload = () => {
+  img.onload = async () => {
     const canvas = document.createElement('canvas');
     canvas.width = img.width;
     canvas.height = img.height;
@@ -100,30 +87,32 @@ const processImage = () => {
     ctx.drawImage(img, 0, 0);
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-    if (config.mode === 'grabcut' && cropper.value) {
-      const { coordinates } = cropper.value.getResult();
-      worker?.postMessage({
-        type: 'GRABCUT',
-        data: {
-          imageData,
-          rect: {
-            left: Math.round(coordinates.left),
-            top: Math.round(coordinates.top),
-            width: Math.round(coordinates.width),
-            height: Math.round(coordinates.height)
-          }
-        }
-      }, [imageData.data.buffer]);
-    } else if (config.mode === 'magic' || config.mode === 'global') {
-      worker?.postMessage({
-        type: config.mode === 'magic' ? 'PROCESS' : 'GLOBAL',
-        data: {
-          imageData,
-          x: config.lastX,
-          y: config.lastY,
-          tolerance: config.tolerance
-        }
-      }, [imageData.data.buffer]);
+    try {
+      let resultData: ImageData;
+      if (config.mode === 'grabcut' && cropper.value) {
+        const { coordinates } = cropper.value.getResult();
+        resultData = await api!.grabCut(imageData, {
+          left: Math.round(coordinates.left),
+          top: Math.round(coordinates.top),
+          width: Math.round(coordinates.width),
+          height: Math.round(coordinates.height)
+        });
+      } else if (config.mode === 'magic') {
+        resultData = await api!.process(imageData, config.lastX, config.lastY, config.tolerance);
+      } else {
+        resultData = await api!.globalRemoval(imageData, config.lastX, config.lastY, config.tolerance);
+      }
+
+      const resCanvas = document.createElement('canvas');
+      resCanvas.width = resultData.width;
+      resCanvas.height = resultData.height;
+      const resCtx = resCanvas.getContext('2d');
+      resCtx?.putImageData(resultData, 0, 0);
+      resultImageUrl.value = resCanvas.toDataURL('image/png');
+    } catch (err: any) {
+      errorMessage.value = err.message || 'Processing failed';
+    } finally {
+      isProcessing.value = false;
     }
   };
   img.src = sourceImageUrl.value!;

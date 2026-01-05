@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
-import * as mupdf from 'mupdf';
+import { ref, watch, onMounted, onUnmounted } from 'vue';
+import * as Comlink from 'comlink';
+import type { MupdfWorker } from '../workers/mupdf-worker';
 import Sortable from 'sortablejs';
 import ToolHeader from "../components/ToolHeader.vue";
 import ToolCard from "../components/ToolCard.vue";
@@ -21,6 +22,18 @@ const isProcessing = ref(false);
 const downloadUrl = ref<string | null>(null);
 const sortableList = ref<HTMLElement | null>(null);
 let sortableInstance: Sortable | null = null;
+
+let worker: Worker | null = null;
+let api: Comlink.Remote<MupdfWorker> | null = null;
+
+onMounted(() => {
+  worker = new Worker(new URL('../workers/mupdf-worker.ts', import.meta.url), { type: 'module' });
+  api = Comlink.wrap<MupdfWorker>(worker);
+});
+
+onUnmounted(() => {
+  worker?.terminate();
+});
 
 watch(sortableList, (newEl) => {
   if (newEl && !sortableInstance) {
@@ -52,43 +65,32 @@ const handleFileChange = async (event: Event) => {
 };
 
 const generateThumbnails = async () => {
-  if (!fileData.value) return;
+  if (!fileData.value || !api) return;
 
   isProcessing.value = true;
   pages.value = [];
 
   try {
-    const doc = mupdf.Document.openDocument(fileData.value, "application/pdf");
-    const count = doc.countPages();
+    const thumbnails = await api.renderThumbnails(fileData.value, 0.5);
 
-    for (let i = 0; i < count; i++) {
-      const page = doc.loadPage(i);
-      // Render thumbnail (0.5 scale for better balance of speed and visibility)
-      const matrix = mupdf.Matrix.scale(0.5, 0.5);
-      const pixmap = page.toPixmap(matrix, mupdf.ColorSpace.DeviceRGB, true);
-
-      const width = pixmap.getWidth();
-      const height = pixmap.getHeight();
+    for (const thumb of thumbnails) {
       const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
+      canvas.width = thumb.width;
+      canvas.height = thumb.height;
       const ctx = canvas.getContext("2d");
 
       if (ctx) {
-        const samples = new Uint8ClampedArray(pixmap.getPixels());
-        const imageData = new ImageData(samples, width, height);
+        const samples = new Uint8ClampedArray(thumb.pixels);
+        const imageData = new ImageData(samples, thumb.width, thumb.height);
         ctx.putImageData(imageData, 0, 0);
 
         pages.value.push({
           id: Math.random().toString(36).substr(2, 9),
-          originalIndex: i,
+          originalIndex: thumb.index,
           thumbnail: canvas.toDataURL()
         });
       }
-      pixmap.destroy();
-      page.destroy();
     }
-    doc.destroy();
   } catch (error) {
     console.error("Thumbnail generation error:", error);
   } finally {
@@ -97,24 +99,13 @@ const generateThumbnails = async () => {
 };
 
 const exportPdf = async () => {
-  if (!fileData.value || pages.value.length === 0) return;
+  if (!fileData.value || pages.value.length === 0 || !api) return;
 
   isProcessing.value = true;
   try {
-    const srcDoc = mupdf.Document.openDocument(fileData.value, "application/pdf").asPDF();
-    if (!srcDoc) throw new Error("Could not open source PDF");
-
-    const outDoc = new mupdf.PDFDocument();
-    for (const pageItem of pages.value) {
-      outDoc.graftPage(-1, srcDoc, pageItem.originalIndex);
-    }
-
-    const res = outDoc.saveToBuffer();
-    const blob = new Blob([res.asUint8Array() as any], { type: "application/pdf" });
+    const result = await api.extractPages(fileData.value, pages.value.map(p => p.originalIndex));
+    const blob = new Blob([result as any], { type: "application/pdf" });
     downloadUrl.value = URL.createObjectURL(blob);
-
-    outDoc.destroy();
-    srcDoc.destroy();
   } catch (error) {
     console.error("PDF Export Error:", error);
     alert("An error occurred while exporting the PDF.");
