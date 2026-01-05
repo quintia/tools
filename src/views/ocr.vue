@@ -2,6 +2,7 @@
 import { ref } from "vue";
 import Tesseract from "tesseract.js";
 import * as mupdf from "mupdf";
+import { calculatePdfProgress, formatOcrResult } from "../utils/ocr";
 import PdfViewer from "../components/PdfViewer.vue";
 import ToolHeader from "../components/ToolHeader.vue";
 import ToolCard from "../components/ToolCard.vue";
@@ -100,16 +101,41 @@ const recognizeText = async () => {
   progress.value = 0;
   status.value = "Initializing...";
 
+  let worker: Tesseract.Worker | null = null;
+  let currentPage = 0;
+  let totalPages = 1;
+
   try {
+    worker = await Tesseract.createWorker(language.value, 3, {
+      workerPath: "/tesseract/worker.min.js",
+      corePath: "/tesseract/",
+      langPath: "/tesseract/lang",
+      logger: (m: Tesseract.LoggerMessage) => {
+        if (m.status === "recognizing text") {
+          progress.value = calculatePdfProgress(
+            currentPage,
+            totalPages,
+            m.progress
+          );
+        }
+        status.value = m.status;
+      },
+    });
+
     if (fileType.value === "application/pdf") {
       const doc = mupdf.Document.openDocument(fileData.value!, "application/pdf");
-      const pageCount = doc.countPages();
-      let combinedText = "";
+      totalPages = doc.countPages();
+      const pages: { pageNumber: number; text: string }[] = [];
 
-      for (let i = 0; i < pageCount; i++) {
-        status.value = `Processing PDF page ${i + 1} of ${pageCount}...`;
+      for (let i = 0; i < totalPages; i++) {
+        currentPage = i;
+        status.value = `Processing PDF page ${i + 1} of ${totalPages}...`;
         const page = doc.loadPage(i);
-        const pixmap = page.toPixmap(mupdf.Matrix.identity, mupdf.ColorSpace.DeviceRGB, true);
+        const pixmap = page.toPixmap(
+          mupdf.Matrix.identity,
+          mupdf.ColorSpace.DeviceRGB,
+          true
+        );
         const width = pixmap.getWidth();
         const height = pixmap.getHeight();
 
@@ -128,35 +154,21 @@ const recognizeText = async () => {
 
         const pageImage = canvas.toDataURL("image/png");
 
-        const { data: { text } } = await Tesseract.recognize(
-          pageImage,
-          language.value,
-          {
-            logger: (m) => {
-              if (m.status === "recognizing text") {
-                progress.value = ((i / pageCount) + (m.progress / pageCount));
-              }
-            },
-          }
-        );
-        combinedText += `--- Page ${i + 1} ---\n${text}\n\n`;
+        const {
+          data: { text },
+        } = await worker.recognize(pageImage);
+
+        pages.push({ pageNumber: i + 1, text });
         pixmap.destroy();
       }
-      result.value = combinedText;
+      result.value = formatOcrResult(pages);
       doc.destroy();
     } else {
-      const { data: { text } } = await Tesseract.recognize(
-        image.value!,
-        language.value,
-        {
-          logger: (m) => {
-            if (m.status === "recognizing text") {
-              progress.value = m.progress;
-            }
-            status.value = m.status;
-          },
-        }
-      );
+      totalPages = 1;
+      currentPage = 0;
+      const {
+        data: { text },
+      } = await worker.recognize(image.value!);
       result.value = text;
     }
     status.value = "Recognition complete";
@@ -165,6 +177,9 @@ const recognizeText = async () => {
     console.error("OCR Error:", error);
     status.value = "Error occurred during recognition";
   } finally {
+    if (worker) {
+      await worker.terminate();
+    }
     isProcessing.value = false;
   }
 };
