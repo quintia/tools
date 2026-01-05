@@ -35,6 +35,7 @@ export const requestedFormats: FormatOption[] = [
   { format: MagickFormat.Ppm, label: "PPM", extension: "ppm", mimeType: "image/x-portable-pixmap" },
   { format: MagickFormat.Tga, label: "TGA", extension: "tga", mimeType: "image/x-targa" },
   { format: MagickFormat.Exr, label: "EXR", extension: "exr", mimeType: "image/x-exr" },
+  { format: MagickFormat.Pdf, label: "PDF", extension: "pdf", mimeType: "application/pdf" },
 ];
 
 let initializePromise: Promise<void> | null = null;

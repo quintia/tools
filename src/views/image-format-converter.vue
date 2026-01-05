@@ -6,6 +6,8 @@ import FilePicker from "../components/FilePicker.vue";
 import ToolHeader from "../components/ToolHeader.vue";
 import DownloadLink from "../components/DownloadLink.vue";
 import LoadingOverlay from "../components/LoadingOverlay.vue";
+import PdfViewer from "../components/PdfViewer.vue";
+import { rasterizePdf, imageToPdf } from "../utils/pdf-utils";
 import {
   convertImageFormat,
   getWritableFormatOptions,
@@ -18,6 +20,7 @@ const targetFormat = ref<MagickFormat | null>(null);
 const loadingFormats = ref(false);
 
 const sourceBytes = ref<Uint8Array | null>(null);
+const sourcePdfBytes = ref<Uint8Array | null>(null);
 const sourcePreview = ref<string>("");
 const sourceName = ref<string>("");
 const sourceDetails = ref<{ width: number; height: number; format: MagickFormat } | null>(null);
@@ -27,6 +30,7 @@ const converting = ref(false);
 const result = ref<{
   option: FormatOption;
   blobUrl: string;
+  bytes: Uint8Array;
   width: number;
   height: number;
   size: number;
@@ -58,16 +62,29 @@ const readFile = async (event: Event) => {
   result.value = null;
 
   const buffer = new Uint8Array(await file.arrayBuffer());
-  sourceBytes.value = buffer;
   sourceName.value = file.name;
+  sourcePdfBytes.value = null;
+
+  let processBuffer: any = buffer;
+  if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
+    sourcePdfBytes.value = buffer;
+    try {
+      processBuffer = await rasterizePdf(buffer);
+    } catch (error) {
+      sourceError.value =
+        "Failed to rasterize PDF: " + (error instanceof Error ? error.message : String(error));
+      return;
+    }
+  }
+  sourceBytes.value = processBuffer;
 
   if (sourcePreview.value) URL.revokeObjectURL(sourcePreview.value);
   sourcePreview.value = URL.createObjectURL(
-    new Blob([buffer], { type: file.type || "application/octet-stream" }),
+    new Blob([processBuffer], { type: "image/png" }),
   );
 
   try {
-    sourceDetails.value = await readImageMetadata(buffer);
+    sourceDetails.value = await readImageMetadata(processBuffer);
   } catch (error) {
     sourceDetails.value = null;
     sourceError.value = error instanceof Error ? error.message : "Unable to read the image.";
@@ -86,8 +103,19 @@ const convert = async () => {
   }
 
   try {
-    const converted = await convertImageFormat(sourceBytes.value, targetFormat.value);
-    const metadata = await readImageMetadata(converted);
+    let converted: Uint8Array;
+    if (targetFormat.value === MagickFormat.Pdf) {
+      // If the source is not already a PNG, convert it to PNG first to be safe for MuPDF
+      const pngBytes = await convertImageFormat(sourceBytes.value, MagickFormat.Png);
+      converted = await imageToPdf(pngBytes, "image/png");
+    } else {
+      converted = await convertImageFormat(sourceBytes.value, targetFormat.value);
+    }
+
+    const metadata =
+      targetFormat.value === MagickFormat.Pdf
+        ? { width: sourceDetails.value?.width || 0, height: sourceDetails.value?.height || 0 }
+        : await readImageMetadata(converted);
 
     if (result.value?.blobUrl) URL.revokeObjectURL(result.value.blobUrl);
 
@@ -95,6 +123,7 @@ const convert = async () => {
     result.value = {
       option,
       blobUrl: URL.createObjectURL(blob),
+      bytes: converted,
       width: metadata.width,
       height: metadata.height,
       size: blob.size,
@@ -135,7 +164,7 @@ loadFormats();
     <ToolCard title="Configuration" class="mb-4">
       <div class="row g-3 align-items-end">
         <div class="col-md-6">
-          <FilePicker label="Input Image" accept="image/*" @change="readFile" />
+          <FilePicker label="Input Image" accept="image/*,application/pdf" @change="readFile" />
         </div>
         <div class="col-md-4">
           <label class="form-label fw-bold small">Target Format</label>
@@ -175,13 +204,16 @@ loadFormats();
             class="bg-light text-center p-3 d-flex align-items-center justify-content-center rounded"
             style="min-height: 300px"
           >
-            <div v-if="sourcePreview">
-              <img
-                :src="sourcePreview"
-                class="img-fluid mb-2 rounded shadow-sm"
-                style="max-height: 400px"
-              />
-              <div v-if="sourceDetails" class="text-muted small font-monospace">
+            <div v-if="sourcePreview" class="w-100">
+              <PdfViewer v-if="sourcePdfBytes" :data="sourcePdfBytes" />
+              <template v-else>
+                <img
+                  :src="sourcePreview"
+                  class="img-fluid mb-2 rounded shadow-sm"
+                  style="max-height: 400px"
+                />
+              </template>
+              <div v-if="sourceDetails" class="text-muted small font-monospace mt-2">
                 {{ sourceDetails.width }} × {{ sourceDetails.height }} px |
                 {{ formatSize(sourceBytes?.length || 0) }}
               </div>
@@ -203,13 +235,16 @@ loadFormats();
             class="bg-light text-center p-3 d-flex align-items-center justify-content-center rounded"
             style="min-height: 300px"
           >
-            <div v-if="result">
-              <img
-                :src="result.blobUrl"
-                class="img-fluid mb-2 rounded shadow-sm"
-                style="max-height: 400px"
-              />
-              <div class="text-muted small font-monospace">
+            <div v-if="result" class="w-100">
+              <PdfViewer v-if="result.option.format === MagickFormat.Pdf" :data="result.bytes" />
+              <template v-else>
+                <img
+                  :src="result.blobUrl"
+                  class="img-fluid mb-2 rounded shadow-sm"
+                  style="max-height: 400px"
+                />
+              </template>
+              <div class="text-muted small font-monospace mt-2">
                 {{ result.width }} × {{ result.height }} px | {{ formatSize(result.size) }}
               </div>
             </div>
