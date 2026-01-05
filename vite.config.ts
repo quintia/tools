@@ -107,7 +107,7 @@ export default defineConfig({
     tesseractCopyPlugin(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["icon-512.png", "favicon.png"],
+      includeAssets: ["icon-512.png", "favicon.ico"],
       manifest: {
         name: "Taniguchi's Tools",
         short_name: "TTools",
