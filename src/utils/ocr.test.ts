@@ -1,10 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import {
-  calculatePdfProgress,
-  formatOcrResult,
-  isLanguageSupported,
-} from "./ocr";
+import { calculatePdfProgress, formatOcrResult, isLanguageSupported } from "./ocr";
 
 test("calculatePdfProgress calculations", () => {
   // Page 1 of 2, 50% done with that page

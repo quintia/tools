@@ -25,7 +25,6 @@ const supportedLanguages = [
   { code: "ben", name: "Bengali" },
   { code: "mya", name: "Burmese" },
   { code: "chi_sim", name: "Chinese - Simplified" },
-  { code: "chi_tra", name: "Chinese - Traditional" },
   { code: "ces", name: "Czech" },
   { code: "dan", name: "Danish" },
   { code: "nld", name: "Dutch" },

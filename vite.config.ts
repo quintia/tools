@@ -5,7 +5,7 @@ import { VitePWA } from "vite-plugin-pwa";
 import fs from "node:fs";
 import path from "node:path";
 import https from "node:https";
-import { fileURLToPath, URL } from "node:url";
+import { fileURLToPath } from "node:url";
 
 // Needed because __dirname is not defined in ES modules
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -51,10 +51,7 @@ function tesseractCopyPlugin(): Plugin {
       }
 
       // Copy worker
-      const workerPath = path.resolve(
-        __dirname,
-        "node_modules/tesseract.js/dist/worker.min.js"
-      );
+      const workerPath = path.resolve(__dirname, "node_modules/tesseract.js/dist/worker.min.js");
       if (fs.existsSync(workerPath)) {
         fs.copyFileSync(workerPath, path.resolve(publicDir, "worker.min.js"));
       }
@@ -68,10 +65,7 @@ function tesseractCopyPlugin(): Plugin {
             file.startsWith("tesseract-core") &&
             (file.endsWith(".js") || file.endsWith(".wasm"))
           ) {
-            fs.copyFileSync(
-              path.resolve(coreDir, file),
-              path.resolve(publicDir, file)
-            );
+            fs.copyFileSync(path.resolve(coreDir, file), path.resolve(publicDir, file));
           }
         });
       }
@@ -92,9 +86,9 @@ function tesseractCopyPlugin(): Plugin {
         languages.map((lang) =>
           downloadFile(
             `${baseUrl}${lang}.traineddata.gz`,
-            path.resolve(langDir, `${lang}.traineddata.gz`)
-          )
-        )
+            path.resolve(langDir, `${lang}.traineddata.gz`),
+          ),
+        ),
       );
     },
   };

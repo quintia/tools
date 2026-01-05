@@ -47,7 +47,7 @@
     "vue-tsc": "^3.2.1"
   },
   "overrides": {
-    "source-map": "^0.7.6",
-    "magic-string": "^0.30.0"
+    "magic-string": "^0.30.0",
+    "source-map": "^0.7.6"
   }
 }

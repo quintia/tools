@@ -7,7 +7,7 @@ import fs from "node:fs";
 test("Tesseract OCR Integration", async () => {
   const imagePath = path.resolve(
     process.cwd(),
-    "node_modules/tesseract.js/docs/images/tesseract.png"
+    "node_modules/tesseract.js/docs/images/tesseract.png",
   );
 
   if (!fs.existsSync(imagePath)) {

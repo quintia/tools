@@ -13,7 +13,7 @@ export interface ProgressUpdate {
 export function calculatePdfProgress(
   currentPage: number,
   totalPages: number,
-  pageProgress: number
+  pageProgress: number,
 ): number {
   if (totalPages <= 0) return 0;
   return (currentPage + pageProgress) / totalPages;
@@ -22,9 +22,7 @@ export function calculatePdfProgress(
 /**
  * Formats the text extracted from multiple pages into a single string.
  */
-export function formatOcrResult(
-  pages: { pageNumber: number; text: string }[]
-): string {
+export function formatOcrResult(pages: { pageNumber: number; text: string }[]): string {
   return pages
     .map((p) => `--- Page ${p.pageNumber} ---\n${p.text}\n\n`)
     .join("")
@@ -34,9 +32,6 @@ export function formatOcrResult(
 /**
  * Validates if the selected language code is supported.
  */
-export function isLanguageSupported(
-  code: string,
-  supportedLanguages: { code: string }[]
-): boolean {
+export function isLanguageSupported(code: string, supportedLanguages: { code: string }[]): boolean {
   return supportedLanguages.some((lang) => lang.code === code);
 }
