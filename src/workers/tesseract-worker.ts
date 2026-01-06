@@ -5,7 +5,7 @@ const tesseractWorker = {
   async recognize(
     image: Tesseract.ImageLike,
     language: string,
-    onProgress?: (m: Tesseract.LoggerMessage) => void
+    onProgress?: (m: Tesseract.LoggerMessage) => void,
   ): Promise<string> {
     const worker = await Tesseract.createWorker(language, 1, {
       workerPath: new URL("/tesseract/worker.min.js", self.location.origin).href,

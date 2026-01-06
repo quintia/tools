@@ -134,7 +134,7 @@ const recognizeText = async () => {
       for (let i = 0; i < totalPages; i++) {
         status.value = `Processing PDF page ${i + 1} of ${totalPages}...`;
         const pageImg = await mApi.getPageAsImage(fileData.value, i);
-        
+
         const canvas = document.createElement("canvas");
         canvas.width = pageImg.width;
         canvas.height = pageImg.height;

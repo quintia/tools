@@ -58,7 +58,7 @@ const imagemagickWorker = {
     const writableFormats = new Set(
       Magick.supportedFormats
         .filter((format) => format.supportsWriting && format.supportsReading)
-        .map((format) => format.format)
+        .map((format) => format.format),
     );
     return requestedFormats.filter((candidate) => writableFormats.has(candidate.format));
   },
@@ -70,7 +70,9 @@ const imagemagickWorker = {
     );
   },
 
-  async readMetadata(data: Uint8Array): Promise<{ width: number; height: number; format: MagickFormat }> {
+  async readMetadata(
+    data: Uint8Array,
+  ): Promise<{ width: number; height: number; format: MagickFormat }> {
     await ensureImageMagickInitialized();
     return ImageMagick.read(data, (image) => ({
       width: image.width,

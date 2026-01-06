@@ -5,7 +5,7 @@ let cv: any = null;
 
 const ensureOpenCV = async () => {
   if (cv && cv.Mat) return;
-  
+
   // @ts-ignore
   cv = cvModule.default || cvModule;
 
@@ -91,7 +91,12 @@ const opencvWorker = {
     }
   },
 
-  async globalRemoval(imageData: ImageData, x: number, y: number, tolerance: number): Promise<ImageData> {
+  async globalRemoval(
+    imageData: ImageData,
+    x: number,
+    y: number,
+    tolerance: number,
+  ): Promise<ImageData> {
     await ensureOpenCV();
     const { width, height } = imageData;
     const idx = (y * width + x) * 4;
@@ -115,7 +120,10 @@ const opencvWorker = {
     return new ImageData(resultData, width, height);
   },
 
-  async grabCut(imageData: ImageData, rect: {left: number, top: number, width: number, height: number}): Promise<ImageData> {
+  async grabCut(
+    imageData: ImageData,
+    rect: { left: number; top: number; width: number; height: number },
+  ): Promise<ImageData> {
     await ensureOpenCV();
     const { width, height } = imageData;
     let src: any, mask: any, bgdModel: any, fgdModel: any;
@@ -169,7 +177,7 @@ const opencvWorker = {
       if (bgdModel) bgdModel.delete();
       if (fgdModel) fgdModel.delete();
     }
-  }
+  },
 };
 
 export type OpencvWorker = typeof opencvWorker;

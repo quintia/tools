@@ -163,14 +163,14 @@ ${stext.asText()}
         const page = doc.loadPage(i);
         const matrix = mupdf.Matrix.scale(scale, scale);
         const pixmap = page.toPixmap(matrix, mupdf.ColorSpace.DeviceRGB, true);
-        
+
         thumbnails.push({
           index: i,
           width: pixmap.getWidth(),
           height: pixmap.getHeight(),
           pixels: pixmap.getPixels(), // Transferable
         });
-        
+
         pixmap.destroy();
         page.destroy();
       }
@@ -180,7 +180,10 @@ ${stext.asText()}
     }
   },
 
-  async getPageAsImage(pdfData: Uint8Array, pageIndex: number): Promise<{width: number, height: number, pixels: Uint8ClampedArray}> {
+  async getPageAsImage(
+    pdfData: Uint8Array,
+    pageIndex: number,
+  ): Promise<{ width: number; height: number; pixels: Uint8ClampedArray }> {
     const doc = mupdf.Document.openDocument(pdfData, "application/pdf");
     try {
       const page = doc.loadPage(pageIndex);
@@ -195,7 +198,7 @@ ${stext.asText()}
     } finally {
       doc.destroy();
     }
-  }
+  },
 };
 
 export type MupdfWorker = typeof mupdfWorker;

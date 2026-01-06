@@ -1,5 +1,4 @@
 import { defineConfig } from "vite";
-import { nodePolyfills } from "vite-plugin-node-polyfills";
 import vue from "unplugin-vue/vite";
 import { VitePWA } from "vite-plugin-pwa";
 import { tesseractCopyPlugin } from "./vite-plugins/tesseract-copy";
@@ -7,7 +6,6 @@ import { tesseractCopyPlugin } from "./vite-plugins/tesseract-copy";
 export default defineConfig({
   plugins: [
     vue(),
-    nodePolyfills(),
     tesseractCopyPlugin(),
     VitePWA({
       registerType: "autoUpdate",
@@ -36,6 +34,18 @@ export default defineConfig({
       },
     }),
   ],
+  resolve: {
+    alias: [
+      {
+        find: /^(node:)?(buffer|fs|path|process|stream|util|module|url|events|crypto|os|http|https|zlib|assert|console|constants|readline|timers|tty|string_decoder)\/?$/,
+        replacement: "@jspm/core/nodelibs/$2",
+      },
+    ],
+  },
+  define: {
+    global: "globalThis",
+    "process.env": "({})",
+  },
   optimizeDeps: {
     exclude: ["mupdf", "tesseract.js"],
   },
