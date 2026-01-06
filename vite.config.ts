@@ -37,7 +37,7 @@ export default defineConfig({
   resolve: {
     alias: [
       {
-        find: /^(node:)?vm$/,
+        find: /^(node:)?(crypto|vm)$/,
         replacement: "@jspm/core/nodelibs/@empty",
       },
       {
@@ -48,7 +48,7 @@ export default defineConfig({
   },
   define: {
     global: "globalThis",
-    "process.env": "({})",
+    "process.env": "{}",
   },
   optimizeDeps: {
     exclude: ["mupdf", "tesseract.js"],
