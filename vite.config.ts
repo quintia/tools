@@ -1,12 +1,14 @@
 import { defineConfig } from "vite";
 import vue from "unplugin-vue/vite";
 import { VitePWA } from "vite-plugin-pwa";
-import { tesseractCopyPlugin } from "./vite-plugins/tesseract-copy";
+import tesseractCopyPlugin from "./unplugin/tesseract-copy";
+import nodelibsPolyfill from "./unplugin/nodelibs-polyfill";
 
 export default defineConfig({
   plugins: [
     vue(),
-    tesseractCopyPlugin(),
+    tesseractCopyPlugin.vite(),
+    nodelibsPolyfill.vite(),
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: ["icon-512.png", "favicon.ico"],
@@ -34,22 +36,7 @@ export default defineConfig({
       },
     }),
   ],
-  resolve: {
-    alias: [
-      {
-        find: /^(node:)?(crypto|vm)$/,
-        replacement: "@jspm/core/nodelibs/@empty",
-      },
-      {
-        find: /^(node:)?(buffer|fs|path|process|stream|util|module|url|events|crypto|os|http|https|zlib|assert|console|constants|readline|timers|tty|string_decoder)\/?$/,
-        replacement: "@jspm/core/nodelibs/$2",
-      },
-    ],
-  },
-  define: {
-    global: "globalThis",
-    "process.env": "{}",
-  },
+
   optimizeDeps: {
     exclude: ["mupdf", "tesseract.js"],
   },

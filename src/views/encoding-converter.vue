@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import { decode, encode } from "iconv-lite";
+import iconv from "iconv-lite";
 import "iconv-lite/encodings";
 import { Buffer } from "buffer";
 import CopyButton from "../components/CopyButton.vue";
@@ -232,13 +232,13 @@ const readAndConvert = async () => {
   try {
     const arrayBuffer = await selectedFile.value.arrayBuffer();
     const buffer = Buffer.from(new Uint8Array(arrayBuffer));
-    const decoded = decode(buffer, sourceEncoding.value);
+    const decoded = iconv.decode(buffer, sourceEncoding.value);
 
     decodedText.value = decoded;
 
-    const encodedBuffer = encode(decoded, targetEncoding.value);
+    const encodedBuffer = iconv.encode(decoded, targetEncoding.value);
     convertedBinary.value = Uint8Array.from(encodedBuffer);
-    convertedText.value = decode(encodedBuffer, targetEncoding.value);
+    convertedText.value = iconv.decode(encodedBuffer, targetEncoding.value);
   } catch (error) {
     conversionError.value = error instanceof Error ? error.message : "Failed to convert file.";
     decodedText.value = "";

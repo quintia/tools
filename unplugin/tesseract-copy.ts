@@ -1,4 +1,4 @@
-import { type Plugin } from "vite";
+import { createUnplugin } from "unplugin";
 import fs from "node:fs";
 import path from "node:path";
 import https from "node:https";
@@ -27,13 +27,15 @@ function downloadFile(url: string, dest: string): Promise<void> {
         });
       })
       .on("error", (err) => {
-        fs.unlink(dest, () => {});
+        if (fs.existsSync(dest)) {
+          fs.unlink(dest, () => {});
+        }
         reject(err);
       });
   });
 }
 
-export function tesseractCopyPlugin(): Plugin {
+export default createUnplugin(() => {
   return {
     name: "tesseract-copy",
     async buildStart() {
@@ -48,23 +50,32 @@ export function tesseractCopyPlugin(): Plugin {
       }
 
       // Copy worker
-      const workerPath = path.resolve(projectRoot, "node_modules/tesseract.js/dist/worker.min.js");
+      const workerPath = path.resolve(
+        projectRoot,
+        "node_modules/tesseract.js/dist/worker.min.js"
+      );
       if (fs.existsSync(workerPath)) {
         fs.copyFileSync(workerPath, path.resolve(publicDir, "worker.min.js"));
       }
 
       // Copy core
-      const coreDir = path.resolve(projectRoot, "node_modules/tesseract.js-core");
+      const coreDir = path.resolve(
+        projectRoot,
+        "node_modules/tesseract.js-core"
+      );
       if (fs.existsSync(coreDir)) {
         const files = fs.readdirSync(coreDir);
-        files.forEach((file) => {
+        for (const file of files) {
           if (
             file.startsWith("tesseract-core") &&
             (file.endsWith(".js") || file.endsWith(".wasm"))
           ) {
-            fs.copyFileSync(path.resolve(coreDir, file), path.resolve(publicDir, file));
+            fs.copyFileSync(
+              path.resolve(coreDir, file),
+              path.resolve(publicDir, file)
+            );
           }
-        });
+        }
       }
 
       // Download languages
@@ -83,10 +94,10 @@ export function tesseractCopyPlugin(): Plugin {
         languages.map((lang) =>
           downloadFile(
             `${baseUrl}${lang}.traineddata.gz`,
-            path.resolve(langDir, `${lang}.traineddata.gz`),
-          ),
-        ),
+            path.resolve(langDir, `${lang}.traineddata.gz`)
+          )
+        )
       );
     },
   };
-}
+});
