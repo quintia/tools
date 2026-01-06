@@ -37,6 +37,10 @@ export default defineConfig({
   resolve: {
     alias: [
       {
+        find: /^(node:)?vm$/,
+        replacement: "@jspm/core/nodelibs/@empty",
+      },
+      {
         find: /^(node:)?(buffer|fs|path|process|stream|util|module|url|events|crypto|os|http|https|zlib|assert|console|constants|readline|timers|tty|string_decoder)\/?$/,
         replacement: "@jspm/core/nodelibs/$2",
       },
