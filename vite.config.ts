@@ -1,17 +1,15 @@
 import { defineConfig } from "vite";
 import vue from "unplugin-vue/vite";
-import { VitePWA } from "vite-plugin-pwa";
 import tesseractCopyPlugin from "./unplugin/tesseract-copy";
 import nodelibsPolyfill from "./unplugin/nodelibs-polyfill";
+import pwaPlugin from "./unplugin/pwa";
 
 export default defineConfig({
   plugins: [
     vue(),
     tesseractCopyPlugin.vite(),
     nodelibsPolyfill.vite(),
-    VitePWA({
-      registerType: "autoUpdate",
-      includeAssets: ["icon-512.png", "favicon.ico"],
+    pwaPlugin.vite({
       manifest: {
         name: "Taniguchi's Tools",
         short_name: "TTools",
