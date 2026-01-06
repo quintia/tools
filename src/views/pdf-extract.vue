@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
-import * as Comlink from 'comlink';
-import type { MupdfWorker } from '../workers/mupdf-worker';
-import PdfViewer from '../components/PdfViewer.vue';
+import { ref, onMounted, onUnmounted } from "vue";
+import * as Comlink from "comlink";
+import type { MupdfWorker } from "../workers/mupdf-worker";
+import PdfViewer from "../components/PdfViewer.vue";
 import ToolHeader from "../components/ToolHeader.vue";
 import ToolCard from "../components/ToolCard.vue";
 import DownloadLink from "../components/DownloadLink.vue";
@@ -18,7 +18,7 @@ let worker: Worker | null = null;
 let api: Comlink.Remote<MupdfWorker> | null = null;
 
 onMounted(() => {
-  worker = new Worker(new URL('../workers/mupdf-worker.ts', import.meta.url), { type: 'module' });
+  worker = new Worker(new URL("../workers/mupdf-worker.ts", import.meta.url), { type: "module" });
   api = Comlink.wrap<MupdfWorker>(worker);
 });
 
@@ -43,12 +43,12 @@ const handleFileChange = (event: Event) => {
 
 const parsePageRanges = (rangeStr: string, maxPages: number): number[] => {
   const pages = new Set<number>();
-  const parts = rangeStr.split(',');
+  const parts = rangeStr.split(",");
 
   for (let part of parts) {
     part = part.trim();
-    if (part.includes('-')) {
-      const [start, end] = part.split('-').map(s => parseInt(s.trim()));
+    if (part.includes("-")) {
+      const [start, end] = part.split("-").map((s) => parseInt(s.trim()));
       if (!isNaN(start) && !isNaN(end)) {
         for (let i = Math.min(start, end); i <= Math.max(start, end); i++) {
           if (i > 0 && i <= maxPages) pages.add(i - 1); // 0-based index

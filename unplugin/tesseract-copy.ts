@@ -50,19 +50,13 @@ export default createUnplugin(() => {
       }
 
       // Copy worker
-      const workerPath = path.resolve(
-        projectRoot,
-        "node_modules/tesseract.js/dist/worker.min.js"
-      );
+      const workerPath = path.resolve(projectRoot, "node_modules/tesseract.js/dist/worker.min.js");
       if (fs.existsSync(workerPath)) {
         fs.copyFileSync(workerPath, path.resolve(publicDir, "worker.min.js"));
       }
 
       // Copy core
-      const coreDir = path.resolve(
-        projectRoot,
-        "node_modules/tesseract.js-core"
-      );
+      const coreDir = path.resolve(projectRoot, "node_modules/tesseract.js-core");
       if (fs.existsSync(coreDir)) {
         const files = fs.readdirSync(coreDir);
         for (const file of files) {
@@ -70,10 +64,7 @@ export default createUnplugin(() => {
             file.startsWith("tesseract-core") &&
             (file.endsWith(".js") || file.endsWith(".wasm"))
           ) {
-            fs.copyFileSync(
-              path.resolve(coreDir, file),
-              path.resolve(publicDir, file)
-            );
+            fs.copyFileSync(path.resolve(coreDir, file), path.resolve(publicDir, file));
           }
         }
       }
@@ -94,9 +85,9 @@ export default createUnplugin(() => {
         languages.map((lang) =>
           downloadFile(
             `${baseUrl}${lang}.traineddata.gz`,
-            path.resolve(langDir, `${lang}.traineddata.gz`)
-          )
-        )
+            path.resolve(langDir, `${lang}.traineddata.gz`),
+          ),
+        ),
       );
     },
   };

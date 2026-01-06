@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from "vue";
-import * as Comlink from 'comlink';
-import type { MupdfWorker } from '../workers/mupdf-worker';
+import * as Comlink from "comlink";
+import type { MupdfWorker } from "../workers/mupdf-worker";
 import PdfViewer from "../components/PdfViewer.vue";
 import ToolHeader from "../components/ToolHeader.vue";
 import ToolCard from "../components/ToolCard.vue";
@@ -23,7 +23,7 @@ let worker: Worker | null = null;
 let api: Comlink.Remote<MupdfWorker> | null = null;
 
 onMounted(() => {
-  worker = new Worker(new URL('../workers/mupdf-worker.ts', import.meta.url), { type: 'module' });
+  worker = new Worker(new URL("../workers/mupdf-worker.ts", import.meta.url), { type: "module" });
   api = Comlink.wrap<MupdfWorker>(worker);
 });
 
@@ -79,7 +79,7 @@ const mergePdfs = async () => {
 
   isProcessing.value = true;
   try {
-    const result = await api.mergePdfs(files.value.map(f => f.data));
+    const result = await api.mergePdfs(files.value.map((f) => f.data));
     const blob = new Blob([result as any], { type: "application/pdf" });
     downloadUrl.value = URL.createObjectURL(blob);
   } catch (error) {

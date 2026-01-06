@@ -39,7 +39,9 @@ let muWorker: Worker | null = null;
 let muApi: Comlink.Remote<MupdfWorker> | null = null;
 
 onMounted(async () => {
-  imWorker = new Worker(new URL("../workers/imagemagick-worker.ts", import.meta.url), { type: "module" });
+  imWorker = new Worker(new URL("../workers/imagemagick-worker.ts", import.meta.url), {
+    type: "module",
+  });
   imApi = Comlink.wrap<ImagemagickWorker>(imWorker);
   muWorker = new Worker(new URL("../workers/mupdf-worker.ts", import.meta.url), { type: "module" });
   muApi = Comlink.wrap<MupdfWorker>(muWorker);

@@ -120,73 +120,69 @@ const chartData = computed(() => {
           <!-- Row 1 -->
           <div class="row g-0 text-center border-bottom">
             <div class="col-md-4 border-end py-3">
-              <div class="small text-uppercase text-muted mb-1" style="font-size: 0.7rem;">
-                Mean
-              </div>
+              <div class="small text-uppercase text-muted mb-1" style="font-size: 0.7rem">Mean</div>
               <div class="fs-4 fw-bold text-primary">
-                {{ values.length ? round(mean(values)) : '-' }}
+                {{ values.length ? round(mean(values)) : "-" }}
               </div>
             </div>
             <div class="col-md-4 border-end py-3">
-              <div class="small text-uppercase text-muted mb-1" style="font-size: 0.7rem;">
+              <div class="small text-uppercase text-muted mb-1" style="font-size: 0.7rem">
                 Variance
               </div>
               <div class="fs-4 fw-bold text-primary">
-                {{ values.length ? round(variance(values)) : '-' }}
+                {{ values.length ? round(variance(values)) : "-" }}
               </div>
             </div>
             <div class="col-md-4 py-3">
-              <div class="small text-uppercase text-muted mb-1" style="font-size: 0.7rem;">
+              <div class="small text-uppercase text-muted mb-1" style="font-size: 0.7rem">
                 Std Deviation
               </div>
               <div class="fs-4 fw-bold text-primary">
-                {{ values.length ? round(standardDeviation(values)) : '-' }}
+                {{ values.length ? round(standardDeviation(values)) : "-" }}
               </div>
             </div>
           </div>
           <!-- Row 2 -->
           <div class="row g-0 text-center border-bottom">
             <div class="col-md-4 border-end py-3">
-              <div class="small text-uppercase text-muted mb-1" style="font-size: 0.7rem;">
+              <div class="small text-uppercase text-muted mb-1" style="font-size: 0.7rem">
                 Q1 (25th)
               </div>
-              <div class="fs-4 fw-bold">{{ values.length ? firstQuartile(values) : '-' }}</div>
+              <div class="fs-4 fw-bold">{{ values.length ? firstQuartile(values) : "-" }}</div>
             </div>
             <div class="col-md-4 border-end py-3">
-              <div class="small text-uppercase text-muted mb-1" style="font-size: 0.7rem;">
+              <div class="small text-uppercase text-muted mb-1" style="font-size: 0.7rem">
                 Median (50th)
               </div>
-              <div class="fs-4 fw-bold">{{ values.length ? median(values) : '-' }}</div>
+              <div class="fs-4 fw-bold">{{ values.length ? median(values) : "-" }}</div>
             </div>
             <div class="col-md-4 py-3">
-              <div class="small text-uppercase text-muted mb-1" style="font-size: 0.7rem;">
+              <div class="small text-uppercase text-muted mb-1" style="font-size: 0.7rem">
                 Q3 (75th)
               </div>
-              <div class="fs-4 fw-bold">{{ values.length ? thirdQuartile(values) : '-' }}</div>
+              <div class="fs-4 fw-bold">{{ values.length ? thirdQuartile(values) : "-" }}</div>
             </div>
           </div>
           <!-- Row 3 -->
           <div class="row g-0 text-center">
             <div class="col-md-4 border-end py-3">
-              <div class="small text-uppercase text-muted mb-1" style="font-size: 0.7rem;">
-                Mode
-              </div>
+              <div class="small text-uppercase text-muted mb-1" style="font-size: 0.7rem">Mode</div>
               <div class="fs-4 fw-bold">
-                {{ values.length ? modes(values)?.join(", ") : '-' }}
+                {{ values.length ? modes(values)?.join(", ") : "-" }}
               </div>
             </div>
             <div class="col-md-4 border-end py-3">
-              <div class="small text-uppercase text-muted mb-1" style="font-size: 0.7rem;">
+              <div class="small text-uppercase text-muted mb-1" style="font-size: 0.7rem">
                 Max / Min
               </div>
               <div class="fs-4 fw-bold">
-                <span class="text-success">{{ values.length ? maxVal(values) : '-' }}</span>
+                <span class="text-success">{{ values.length ? maxVal(values) : "-" }}</span>
                 <span class="mx-2 text-muted">/</span>
-                <span class="text-danger">{{ values.length ? minVal(values) : '-' }}</span>
+                <span class="text-danger">{{ values.length ? minVal(values) : "-" }}</span>
               </div>
             </div>
             <div class="col-md-4 py-3">
-              <div class="small text-uppercase text-muted mb-1" style="font-size: 0.7rem;">
+              <div class="small text-uppercase text-muted mb-1" style="font-size: 0.7rem">
                 Total Count
               </div>
               <div class="fs-4 fw-bold">{{ values.length }}</div>
@@ -213,14 +209,19 @@ const chartData = computed(() => {
             >
               <g v-for="(item, index) in chartData.data" :key="item.label">
                 <rect
-                  :x="index * (Math.max(400, chartData.data.length * 40) / chartData.data.length) + 5"
+                  :x="
+                    index * (Math.max(400, chartData.data.length * 40) / chartData.data.length) + 5
+                  "
                   :y="250 - (item.value / chartData.maxVal) * 220"
                   :width="Math.max(400, chartData.data.length * 40) / chartData.data.length - 10"
                   :height="(item.value / chartData.maxVal) * 220"
                   style="fill: var(--bs-primary)"
                 />
                 <text
-                  :x="index * (Math.max(400, chartData.data.length * 40) / chartData.data.length) + (Math.max(400, chartData.data.length * 40) / chartData.data.length) / 2"
+                  :x="
+                    index * (Math.max(400, chartData.data.length * 40) / chartData.data.length) +
+                    Math.max(400, chartData.data.length * 40) / chartData.data.length / 2
+                  "
                   y="270"
                   text-anchor="middle"
                   font-size="12"
@@ -229,7 +230,10 @@ const chartData = computed(() => {
                   {{ item.label }}
                 </text>
                 <text
-                  :x="index * (Math.max(400, chartData.data.length * 40) / chartData.data.length) + (Math.max(400, chartData.data.length * 40) / chartData.data.length) / 2"
+                  :x="
+                    index * (Math.max(400, chartData.data.length * 40) / chartData.data.length) +
+                    Math.max(400, chartData.data.length * 40) / chartData.data.length / 2
+                  "
                   :y="245 - (item.value / chartData.maxVal) * 220"
                   text-anchor="middle"
                   font-size="10"

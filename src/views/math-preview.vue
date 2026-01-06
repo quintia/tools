@@ -100,9 +100,13 @@ const renderMath = async () => {
   }
 };
 
-watch(input, () => {
-  renderMath();
-}, { immediate: true });
+watch(
+  input,
+  () => {
+    renderMath();
+  },
+  { immediate: true },
+);
 
 onMounted(() => {
   renderMath();
@@ -138,7 +142,7 @@ onMounted(() => {
             </div>
             <div
               class="preview-container border-0 rounded-0 p-4 text-center d-flex align-items-center justify-content-center"
-              style="min-height: 382px;"
+              style="min-height: 382px"
             >
               <div v-if="!input.trim()" class="text-muted small">
                 Enter some TeX to see the preview

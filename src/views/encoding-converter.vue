@@ -358,11 +358,9 @@ watch([sourceEncoding, targetEncoding], () => {
       <div class="col-lg-6 mb-4">
         <ToolCard title="Decoded preview" class="h-100" no-padding>
           <template #header-actions>
-            <span
-              class="badge bg-secondary opacity-75"
-              v-if="selectedFile"
-              >{{ sourceEncoding.toUpperCase() }}</span
-            >
+            <span class="badge bg-secondary opacity-75" v-if="selectedFile">{{
+              sourceEncoding.toUpperCase()
+            }}</span>
           </template>
           <MonospaceEditor
             v-model="decodedText"

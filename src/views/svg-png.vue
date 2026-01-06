@@ -17,9 +17,13 @@ const raw = ref(`<svg width="300" height="300" xmlns="http://www.w3.org/2000/svg
 </svg>`);
 
 // Watch raw and update svg preview
-watch(raw, (newRaw) => {
-  svg.value = `data:image/svg+xml,${encodeURIComponent(newRaw)}`;
-}, { immediate: true });
+watch(
+  raw,
+  (newRaw) => {
+    svg.value = `data:image/svg+xml,${encodeURIComponent(newRaw)}`;
+  },
+  { immediate: true },
+);
 
 const handleClick = async () => {
   const canvas = document.createElement("canvas");

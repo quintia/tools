@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import PdfViewer from '../components/PdfViewer.vue';
+import { ref } from "vue";
+import PdfViewer from "../components/PdfViewer.vue";
 import ToolHeader from "../components/ToolHeader.vue";
 import ToolCard from "../components/ToolCard.vue";
 import FilePicker from "../components/FilePicker.vue";

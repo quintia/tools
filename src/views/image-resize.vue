@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue';
-import { Cropper } from 'vue-advanced-cropper';
-import 'vue-advanced-cropper/dist/style.css';
+import { ref, reactive, watch } from "vue";
+import { Cropper } from "vue-advanced-cropper";
+import "vue-advanced-cropper/dist/style.css";
 import ToolHeader from "../components/ToolHeader.vue";
 import ToolCard from "../components/ToolCard.vue";
 import DownloadLink from "../components/DownloadLink.vue";
@@ -16,13 +16,13 @@ const isProcessing = ref(false);
 const config = reactive({
   width: 0,
   height: 0,
-  unit: 'px',
+  unit: "px",
   maintainAspectRatio: true,
-  format: 'image/png',
+  format: "image/png",
   quality: 0.9,
 });
 
-const prevUnit = ref('px');
+const prevUnit = ref("px");
 
 const units = {
   px: 1,
@@ -32,7 +32,8 @@ const units = {
 };
 
 const toPx = (val: number, unit: string) => val * (units[unit as keyof typeof units] || 1);
-const fromPx = (val: number, unit: string) => Number((val / (units[unit as keyof typeof units] || 1)).toFixed(2));
+const fromPx = (val: number, unit: string) =>
+  Number((val / (units[unit as keyof typeof units] || 1)).toFixed(2));
 
 const handleFileChange = (event: Event) => {
   const target = event.target as HTMLInputElement;
@@ -67,10 +68,10 @@ const applyResize = () => {
     const targetWidth = Math.round(toPx(config.width, config.unit));
     const targetHeight = Math.round(toPx(config.height, config.unit));
 
-    const resizedCanvas = document.createElement('canvas');
+    const resizedCanvas = document.createElement("canvas");
     resizedCanvas.width = targetWidth;
     resizedCanvas.height = targetHeight;
-    const ctx = resizedCanvas.getContext('2d');
+    const ctx = resizedCanvas.getContext("2d");
     if (ctx) {
       ctx.drawImage(canvas, 0, 0, targetWidth, targetHeight);
       resultImageUrl.value = resizedCanvas.toDataURL(config.format, config.quality);
@@ -195,7 +196,7 @@ watch([() => config.format, () => config.quality], applyResize);
               class="cropper"
               :src="sourceImageUrl"
               @change="handleCropChange"
-              style="width: 100%; height: 500px;"
+              style="width: 100%; height: 500px"
             />
             <div v-else-if="!isProcessing" class="text-muted small">
               Upload an image to start cropping
@@ -216,7 +217,9 @@ watch([() => config.format, () => config.quality], applyResize);
               </button>
               <DownloadLink
                 :href="resultImageUrl"
-                :filename="'processed_' + (config.format === 'image/png' ? 'image.png' : 'image.jpg')"
+                :filename="
+                  'processed_' + (config.format === 'image/png' ? 'image.png' : 'image.jpg')
+                "
                 label="Download"
               />
             </div>

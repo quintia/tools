@@ -4,7 +4,9 @@ import ToolHeader from "../components/ToolHeader.vue";
 import ToolCard from "../components/ToolCard.vue";
 import MonospaceEditor from "../components/MonospaceEditor.vue";
 
-const input = ref("The quick brown fox jumps over the lazy dog.\n\nVue.js is an approachable, performant, and versatile framework for building web user interfaces.");
+const input = ref(
+  "The quick brown fox jumps over the lazy dog.\n\nVue.js is an approachable, performant, and versatile framework for building web user interfaces.",
+);
 
 const countGraphemeClusters = (text: string) => {
   const segmenter = new Intl.Segmenter("en", {
@@ -44,19 +46,19 @@ const lineCount = computed(() => input.value.split(/\r\n|\r|\n/).length);
         <ToolCard title="Statistics Summary" no-padding>
           <div class="row g-0 text-center">
             <div class="col-md-4 border-end py-4">
-              <div class="small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">
+              <div class="small text-uppercase text-muted mb-1" style="font-size: 0.75rem">
                 Characters
               </div>
               <div class="display-6 fw-bold text-primary">{{ graphemeCount }}</div>
             </div>
             <div class="col-md-4 border-end py-4">
-              <div class="small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">
+              <div class="small text-uppercase text-muted mb-1" style="font-size: 0.75rem">
                 Words
               </div>
               <div class="display-6 fw-bold text-primary">{{ wordCount }}</div>
             </div>
             <div class="col-md-4 py-4">
-              <div class="small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">
+              <div class="small text-uppercase text-muted mb-1" style="font-size: 0.75rem">
                 Lines
               </div>
               <div class="display-6 fw-bold text-primary">{{ lineCount }}</div>

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue';
-import * as Comlink from 'comlink';
-import type { MupdfWorker } from '../workers/mupdf-worker';
-import LoadingOverlay from './LoadingOverlay.vue';
+import { ref, onMounted, onUnmounted, watch } from "vue";
+import * as Comlink from "comlink";
+import type { MupdfWorker } from "../workers/mupdf-worker";
+import LoadingOverlay from "./LoadingOverlay.vue";
 
 const props = defineProps<{
   data: Uint8Array | null;
@@ -16,7 +16,7 @@ let worker: Worker | null = null;
 let api: Comlink.Remote<MupdfWorker> | null = null;
 
 onMounted(() => {
-  worker = new Worker(new URL('../workers/mupdf-worker.ts', import.meta.url), { type: 'module' });
+  worker = new Worker(new URL("../workers/mupdf-worker.ts", import.meta.url), { type: "module" });
   api = Comlink.wrap<MupdfWorker>(worker);
   if (props.data) renderPdf();
 });
@@ -69,7 +69,7 @@ watch(() => props.data, renderPdf);
 <template>
   <div
     class="pdf-viewer-container bg-secondary bg-opacity-10 p-3 rounded overflow-auto"
-    style="max-height: 800px;"
+    style="max-height: 800px"
   >
     <LoadingOverlay :loading="isRendering" message="Rendering Document..." />
 

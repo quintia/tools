@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
-import * as Comlink from 'comlink';
-import type { MupdfWorker } from '../workers/mupdf-worker';
-import PdfViewer from '../components/PdfViewer.vue';
+import { ref, onMounted, onUnmounted } from "vue";
+import * as Comlink from "comlink";
+import type { MupdfWorker } from "../workers/mupdf-worker";
+import PdfViewer from "../components/PdfViewer.vue";
 import ToolHeader from "../components/ToolHeader.vue";
 import ToolCard from "../components/ToolCard.vue";
 import CopyButton from "../components/CopyButton.vue";
@@ -18,7 +18,7 @@ let worker: Worker | null = null;
 let api: Comlink.Remote<MupdfWorker> | null = null;
 
 onMounted(() => {
-  worker = new Worker(new URL('../workers/mupdf-worker.ts', import.meta.url), { type: 'module' });
+  worker = new Worker(new URL("../workers/mupdf-worker.ts", import.meta.url), { type: "module" });
   api = Comlink.wrap<MupdfWorker>(worker);
 });
 
@@ -88,7 +88,7 @@ const extractText = async () => {
       <!-- Preview Area -->
       <div class="col-lg-6 mb-4">
         <ToolCard title="Source Preview" class="h-100" no-padding>
-          <div class="overflow-auto" style="min-height: 500px; max-height: 800px;">
+          <div class="overflow-auto" style="min-height: 500px; max-height: 800px">
             <PdfViewer :data="fileData" />
           </div>
         </ToolCard>
@@ -105,7 +105,7 @@ const extractText = async () => {
             bg-light
             readonly
             placeholder="Extracted text will appear here..."
-            style="min-height: 500px; height: 100%;"
+            style="min-height: 500px; height: 100%"
           />
         </ToolCard>
       </div>

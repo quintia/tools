@@ -74,7 +74,9 @@ function buildHighlightedHtml(text: string, matches: MatchSegment[]): string {
   let cursor = 0;
   for (const match of matches) {
     if (match.start > cursor) fragments.push(escapeHtml(text.slice(cursor, match.start)));
-    fragments.push(`<mark class="text-finder-highlight">${escapeHtml(text.slice(match.start, match.end))}</mark>`);
+    fragments.push(
+      `<mark class="text-finder-highlight">${escapeHtml(text.slice(match.start, match.end))}</mark>`,
+    );
     cursor = match.end;
   }
   if (cursor < text.length) fragments.push(escapeHtml(text.slice(cursor)));

@@ -73,7 +73,9 @@ let mWorker: Worker | null = null;
 let mApi: Comlink.Remote<MupdfWorker> | null = null;
 
 onMounted(() => {
-  tWorker = new Worker(new URL("../workers/tesseract-worker.ts", import.meta.url), { type: "module" });
+  tWorker = new Worker(new URL("../workers/tesseract-worker.ts", import.meta.url), {
+    type: "module",
+  });
   tApi = Comlink.wrap<TesseractWorker>(tWorker);
   mWorker = new Worker(new URL("../workers/mupdf-worker.ts", import.meta.url), { type: "module" });
   mApi = Comlink.wrap<MupdfWorker>(mWorker);
@@ -90,7 +92,10 @@ const calculatePdfProgress = (currentPage: number, totalPages: number, pageProgr
 };
 
 const formatOcrResult = (pages: { pageNumber: number; text: string }[]) => {
-  return pages.map((p) => `--- Page ${p.pageNumber} ---\n${p.text}\n\n`).join("").trim();
+  return pages
+    .map((p) => `--- Page ${p.pageNumber} ---\n${p.text}\n\n`)
+    .join("")
+    .trim();
 };
 
 const handleFileChange = (event: Event) => {
@@ -140,26 +145,38 @@ const recognizeText = async () => {
         canvas.height = pageImg.height;
         const ctx = canvas.getContext("2d");
         if (!ctx) continue;
-        const imageData = new ImageData(new Uint8ClampedArray(pageImg.pixels), pageImg.width, pageImg.height);
+        const imageData = new ImageData(
+          new Uint8ClampedArray(pageImg.pixels),
+          pageImg.width,
+          pageImg.height,
+        );
         ctx.putImageData(imageData, 0, 0);
         const dataUrl = canvas.toDataURL("image/png");
 
-        const text = await tApi.recognize(dataUrl, language.value, Comlink.proxy((m: any) => {
-          if (m.status === "recognizing text") {
-            progress.value = calculatePdfProgress(i, totalPages, m.progress);
-          }
-        }));
+        const text = await tApi.recognize(
+          dataUrl,
+          language.value,
+          Comlink.proxy((m: any) => {
+            if (m.status === "recognizing text") {
+              progress.value = calculatePdfProgress(i, totalPages, m.progress);
+            }
+          }),
+        );
 
         pages.push({ pageNumber: i + 1, text });
       }
       result.value = formatOcrResult(pages);
     } else {
-      const text = await tApi.recognize(image.value!, language.value, Comlink.proxy((m: any) => {
-        if (m.status === "recognizing text") {
-          progress.value = m.progress;
-        }
-        status.value = m.status;
-      }));
+      const text = await tApi.recognize(
+        image.value!,
+        language.value,
+        Comlink.proxy((m: any) => {
+          if (m.status === "recognizing text") {
+            progress.value = m.progress;
+          }
+          status.value = m.status;
+        }),
+      );
       result.value = text;
     }
     status.value = "Recognition complete";
@@ -205,7 +222,7 @@ const recognizeText = async () => {
             :disabled="!fileData || isProcessing"
           >
             <span v-if="isProcessing" class="spinner-border spinner-border-sm me-2"></span>
-            {{ isProcessing ? 'Processing...' : 'Start OCR' }}
+            {{ isProcessing ? "Processing..." : "Start OCR" }}
           </button>
         </div>
       </div>
@@ -214,13 +231,13 @@ const recognizeText = async () => {
           <span class="small text-muted text-uppercase fw-bold">{{ status }}</span>
           <span class="small text-muted">{{ Math.round(progress * 100) }}%</span>
         </div>
-        <div class="progress" style="height: 10px;">
+        <div class="progress" style="height: 10px">
           <div
             class="progress-bar"
             role="progressbar"
-            :class="{ 
+            :class="{
               'progress-bar-striped progress-bar-animated': isProcessing,
-              'bg-success': status === 'Recognition complete'
+              'bg-success': status === 'Recognition complete',
             }"
             :style="{ width: `${progress * 100}%` }"
           ></div>

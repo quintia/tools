@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from "vue";
-import * as Comlink from 'comlink';
-import type { MupdfWorker } from '../workers/mupdf-worker';
+import * as Comlink from "comlink";
+import type { MupdfWorker } from "../workers/mupdf-worker";
 import PdfViewer from "../components/PdfViewer.vue";
 import ToolHeader from "../components/ToolHeader.vue";
 import ToolCard from "../components/ToolCard.vue";
@@ -26,7 +26,7 @@ let worker: Worker | null = null;
 let api: Comlink.Remote<MupdfWorker> | null = null;
 
 onMounted(() => {
-  worker = new Worker(new URL('../workers/mupdf-worker.ts', import.meta.url), { type: 'module' });
+  worker = new Worker(new URL("../workers/mupdf-worker.ts", import.meta.url), { type: "module" });
   api = Comlink.wrap<MupdfWorker>(worker);
 });
 
@@ -96,7 +96,7 @@ const analyzeFonts = async () => {
     <div class="row">
       <div class="col-lg-6 mb-4">
         <ToolCard title="Source Preview" class="h-100" no-padding>
-          <div class="overflow-auto" style="min-height: 500px; max-height: 800px;">
+          <div class="overflow-auto" style="min-height: 500px; max-height: 800px">
             <PdfViewer :data="fileData" />
           </div>
           <template #footer>
@@ -120,7 +120,7 @@ const analyzeFonts = async () => {
                   <th scope="col">Font Name</th>
                   <th scope="col" class="text-center">Style</th>
                   <th scope="col" class="text-end">Occurrences</th>
-                  <th scope="col" style="min-width: 160px;">Pages</th>
+                  <th scope="col" style="min-width: 160px">Pages</th>
                 </tr>
               </thead>
               <tbody>

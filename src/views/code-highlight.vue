@@ -134,20 +134,24 @@ type ThemeOption = {
 const languages = computed<LanguageOption[]>(() =>
   bundledLanguagesInfo
     .map((lang) => ({ value: lang.id as BundledLanguage, label: lang.name }))
-    .sort((a, b) => a.label.localeCompare(b.label))
+    .sort((a, b) => a.label.localeCompare(b.label)),
 );
 
 const themes = computed<ThemeOption[]>(() =>
   bundledThemesInfo
     .map((themeInfo) => ({ value: themeInfo.id as BundledTheme, label: themeInfo.displayName }))
-    .sort((a, b) => a.label.localeCompare(b.label))
+    .sort((a, b) => a.label.localeCompare(b.label)),
 );
 
-const code = ref(`function greet(name: string) {
-  return ` + "`Hello, ${name}!`" + `;
+const code = ref(
+  `function greet(name: string) {
+  return ` +
+    "`Hello, ${name}!`" +
+    `;
 }
 
-greet("Taniguchi");`);
+greet("Taniguchi");`,
+);
 const language = ref<BundledLanguage>("typescript");
 const theme = ref<BundledTheme>("github-light");
 const fontSize = ref(14);
@@ -219,7 +223,9 @@ const downloadPng = async () => {
     link.click();
   } catch (downloadError) {
     error.value =
-      downloadError instanceof Error ? downloadError.message : "Unable to generate PNG from the preview.";
+      downloadError instanceof Error
+        ? downloadError.message
+        : "Unable to generate PNG from the preview.";
   } finally {
     isDownloading.value = false;
   }

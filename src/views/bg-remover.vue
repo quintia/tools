@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted, onUnmounted, watch } from 'vue';
-import { Cropper } from 'vue-advanced-cropper';
-import 'vue-advanced-cropper/dist/style.css';
-import * as Comlink from 'comlink';
-import type { OpencvWorker } from '../workers/opencv-worker';
+import { ref, reactive, onMounted, onUnmounted, watch } from "vue";
+import { Cropper } from "vue-advanced-cropper";
+import "vue-advanced-cropper/dist/style.css";
+import * as Comlink from "comlink";
+import type { OpencvWorker } from "../workers/opencv-worker";
 import ToolHeader from "../components/ToolHeader.vue";
 import ToolCard from "../components/ToolCard.vue";
 import DownloadLink from "../components/DownloadLink.vue";
@@ -18,7 +18,7 @@ const errorMessage = ref<string | null>(null);
 const cropper = ref<any>(null);
 
 const config = reactive({
-  mode: 'grabcut' as 'magic' | 'grabcut' | 'global',
+  mode: "grabcut" as "magic" | "grabcut" | "global",
   tolerance: 30,
   lastX: -1,
   lastY: -1,
@@ -29,8 +29,8 @@ let worker: Worker | null = null;
 let api: Comlink.Remote<OpencvWorker> | null = null;
 
 onMounted(() => {
-  worker = new Worker(new URL('../workers/opencv-worker.ts', import.meta.url), {
-    type: 'module'
+  worker = new Worker(new URL("../workers/opencv-worker.ts", import.meta.url), {
+    type: "module",
   });
   api = Comlink.wrap<OpencvWorker>(worker);
   isOpenCvReady.value = true;
@@ -58,7 +58,12 @@ const handleFileChange = (event: Event) => {
 };
 
 const pickColor = (event: MouseEvent) => {
-  if ((config.mode !== 'magic' && config.mode !== 'global') || !sourceImageUrl.value || !isOpenCvReady.value) return;
+  if (
+    (config.mode !== "magic" && config.mode !== "global") ||
+    !sourceImageUrl.value ||
+    !isOpenCvReady.value
+  )
+    return;
 
   const imgElement = event.target as HTMLImageElement;
   const rect = imgElement.getBoundingClientRect();
@@ -79,38 +84,43 @@ const processImage = async () => {
 
   const img = new Image();
   img.onload = async () => {
-    const canvas = document.createElement('canvas');
+    const canvas = document.createElement("canvas");
     canvas.width = img.width;
     canvas.height = img.height;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.drawImage(img, 0, 0);
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
     try {
       let resultData: ImageData;
-      if (config.mode === 'grabcut' && cropper.value) {
+      if (config.mode === "grabcut" && cropper.value) {
         const { coordinates } = cropper.value.getResult();
         resultData = await api!.grabCut(imageData, {
           left: Math.round(coordinates.left),
           top: Math.round(coordinates.top),
           width: Math.round(coordinates.width),
-          height: Math.round(coordinates.height)
+          height: Math.round(coordinates.height),
         });
-      } else if (config.mode === 'magic') {
+      } else if (config.mode === "magic") {
         resultData = await api!.process(imageData, config.lastX, config.lastY, config.tolerance);
       } else {
-        resultData = await api!.globalRemoval(imageData, config.lastX, config.lastY, config.tolerance);
+        resultData = await api!.globalRemoval(
+          imageData,
+          config.lastX,
+          config.lastY,
+          config.tolerance,
+        );
       }
 
-      const resCanvas = document.createElement('canvas');
+      const resCanvas = document.createElement("canvas");
       resCanvas.width = resultData.width;
       resCanvas.height = resultData.height;
-      const resCtx = resCanvas.getContext('2d');
+      const resCtx = resCanvas.getContext("2d");
       resCtx?.putImageData(resultData, 0, 0);
-      resultImageUrl.value = resCanvas.toDataURL('image/png');
+      resultImageUrl.value = resCanvas.toDataURL("image/png");
     } catch (err: any) {
-      errorMessage.value = err.message || 'Processing failed';
+      errorMessage.value = err.message || "Processing failed";
     } finally {
       isProcessing.value = false;
     }
@@ -120,15 +130,18 @@ const processImage = async () => {
 
 let debounceTimeout: number | null = null;
 
-watch(() => config.tolerance, () => {
-  if ((config.mode === 'magic' || config.mode === 'global') && config.hasSelected) {
-    if (debounceTimeout) clearTimeout(debounceTimeout);
-    debounceTimeout = window.setTimeout(() => {
-      processImage();
-      debounceTimeout = null;
-    }, 150);
-  }
-});
+watch(
+  () => config.tolerance,
+  () => {
+    if ((config.mode === "magic" || config.mode === "global") && config.hasSelected) {
+      if (debounceTimeout) clearTimeout(debounceTimeout);
+      debounceTimeout = window.setTimeout(() => {
+        processImage();
+        debounceTimeout = null;
+      }, 150);
+    }
+  },
+);
 </script>
 
 <template>
@@ -157,7 +170,10 @@ watch(() => config.tolerance, () => {
           <select
             v-model="config.mode"
             class="form-select form-select-sm"
-            @change="resultImageUrl = null; config.hasSelected = false"
+            @change="
+              resultImageUrl = null;
+              config.hasSelected = false;
+            "
           >
             <option value="grabcut">GrabCut (Area Selection)</option>
             <option value="magic">Magic Wand (Connected Color)</option>
@@ -189,7 +205,11 @@ watch(() => config.tolerance, () => {
         <div class="col-md-3 text-end" v-else>
           <button
             class="btn btn-sm btn-outline-secondary"
-            @click="sourceImageUrl = null; resultImageUrl = null; config.hasSelected = false"
+            @click="
+              sourceImageUrl = null;
+              resultImageUrl = null;
+              config.hasSelected = false;
+            "
             :disabled="!sourceImageUrl"
           >
             Reset
@@ -202,12 +222,14 @@ watch(() => config.tolerance, () => {
       <!-- Workspace -->
       <div class="col-lg-6 mb-4">
         <ToolCard
-          :title="config.mode === 'magic' ? 'Magic Wand (Click to remove)' : 'GrabCut (Select area)'"
+          :title="
+            config.mode === 'magic' ? 'Magic Wand (Click to remove)' : 'GrabCut (Select area)'
+          "
           class="h-100"
         >
           <div
             class="bg-secondary bg-opacity-10 p-0 overflow-auto d-flex align-items-center justify-content-center position-relative"
-            style="min-height: 500px; max-height: 700px;"
+            style="min-height: 500px; max-height: 700px"
           >
             <LoadingOverlay :loading="!isOpenCvReady" message="Initializing Engine..." />
 
@@ -224,7 +246,7 @@ watch(() => config.tolerance, () => {
                 :src="sourceImageUrl"
                 @click="pickColor"
                 class="mw-100 h-auto border shadow-sm"
-                style="cursor: crosshair; max-height: 700px;"
+                style="cursor: crosshair; max-height: 700px"
                 alt="Source"
               />
             </template>
@@ -251,7 +273,7 @@ watch(() => config.tolerance, () => {
           </template>
           <div
             class="checkerboard-bg p-0 overflow-auto d-flex align-items-center justify-content-center position-relative"
-            style="min-height: 500px; max-height: 700px;"
+            style="min-height: 500px; max-height: 700px"
           >
             <LoadingOverlay :loading="isProcessing" message="Processing..." />
             <img
@@ -276,12 +298,17 @@ watch(() => config.tolerance, () => {
 
 <style scoped>
 .checkerboard-bg {
-  background-image: linear-gradient(45deg, #eee 25%, transparent 25%),
+  background-image:
+    linear-gradient(45deg, #eee 25%, transparent 25%),
     linear-gradient(-45deg, #eee 25%, transparent 25%),
     linear-gradient(45deg, transparent 75%, #eee 75%),
     linear-gradient(-45deg, transparent 75%, #eee 75%);
   background-size: 20px 20px;
-  background-position: 0 0, 0 10px, 10px 10px, 10px 0;
+  background-position:
+    0 0,
+    0 10px,
+    10px 10px,
+    10px 0;
   background-color: white;
 }
 </style>

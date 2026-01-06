@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue';
-import * as Comlink from 'comlink';
-import type { MupdfWorker } from '../workers/mupdf-worker';
-import Sortable from 'sortablejs';
+import { ref, watch, onMounted, onUnmounted } from "vue";
+import * as Comlink from "comlink";
+import type { MupdfWorker } from "../workers/mupdf-worker";
+import Sortable from "sortablejs";
 import ToolHeader from "../components/ToolHeader.vue";
 import ToolCard from "../components/ToolCard.vue";
 import DownloadLink from "../components/DownloadLink.vue";
@@ -27,7 +27,7 @@ let worker: Worker | null = null;
 let api: Comlink.Remote<MupdfWorker> | null = null;
 
 onMounted(() => {
-  worker = new Worker(new URL('../workers/mupdf-worker.ts', import.meta.url), { type: 'module' });
+  worker = new Worker(new URL("../workers/mupdf-worker.ts", import.meta.url), { type: "module" });
   api = Comlink.wrap<MupdfWorker>(worker);
 });
 
@@ -39,7 +39,7 @@ watch(sortableList, (newEl) => {
   if (newEl && !sortableInstance) {
     sortableInstance = Sortable.create(newEl, {
       animation: 150,
-      ghostClass: 'opacity-50',
+      ghostClass: "opacity-50",
       onEnd: (evt) => {
         const { oldIndex, newIndex } = evt;
         if (oldIndex !== undefined && newIndex !== undefined) {
@@ -87,7 +87,7 @@ const generateThumbnails = async () => {
         pages.value.push({
           id: Math.random().toString(36).substr(2, 9),
           originalIndex: thumb.index,
-          thumbnail: canvas.toDataURL()
+          thumbnail: canvas.toDataURL(),
         });
       }
     }
@@ -103,7 +103,10 @@ const exportPdf = async () => {
 
   isProcessing.value = true;
   try {
-    const result = await api.extractPages(fileData.value, pages.value.map(p => p.originalIndex));
+    const result = await api.extractPages(
+      fileData.value,
+      pages.value.map((p) => p.originalIndex),
+    );
     const blob = new Blob([result as any], { type: "application/pdf" });
     downloadUrl.value = URL.createObjectURL(blob);
   } catch (error) {
@@ -184,7 +187,7 @@ const exportPdf = async () => {
                 </div>
               </div>
               <div class="card-footer p-1 bg-white text-center border-0">
-                <span class="x-small text-muted text-uppercase fw-bold" style="font-size: 0.6rem;"
+                <span class="x-small text-muted text-uppercase fw-bold" style="font-size: 0.6rem"
                   >Drag to move</span
                 >
               </div>

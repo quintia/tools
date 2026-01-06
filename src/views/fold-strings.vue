@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed } from "vue";
 import ToolHeader from "../components/ToolHeader.vue";
 import ToolCard from "../components/ToolCard.vue";
 import CopyButton from "../components/CopyButton.vue";
@@ -18,7 +18,7 @@ Sakura bought 1 car for 500000 cents with 1000000 cents. How much is the change?
 const showSteps = ref(false);
 const diffChar = ref("#");
 
-const lineCount = computed(() => inputText.value.split(/\n/).filter(line => line.trim()).length);
+const lineCount = computed(() => inputText.value.split(/\n/).filter((line) => line.trim()).length);
 
 const limitDiffChar = () => {
   if (diffChar.value.length > 1) {
@@ -29,7 +29,9 @@ const limitDiffChar = () => {
 const computeLCSDiff = (str1: string, str2: string) => {
   const m = str1.length;
   const n = str2.length;
-  const dp = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
+  const dp = Array(m + 1)
+    .fill(null)
+    .map(() => Array(n + 1).fill(0));
 
   for (let i = 1; i <= m; i++) {
     for (let j = 1; j <= n; j++) {
@@ -59,13 +61,13 @@ const computeLCSDiff = (str1: string, str2: string) => {
     }
   }
 
-  const escapedDiffChar = diffChar.value.replace(/[.*+?^${}()|[\\]/g, '\\$&');
-  const regex = new RegExp(`${escapedDiffChar}+`, 'g');
+  const escapedDiffChar = diffChar.value.replace(/[.*+?^${}()|[\\]/g, "\\$&");
+  const regex = new RegExp(`${escapedDiffChar}+`, "g");
   return merged.replace(regex, diffChar.value);
 };
 
 const processedData = computed(() => {
-  const lines = inputText.value.split(/\r\n|\r|\n/).filter(line => line.trim());
+  const lines = inputText.value.split(/\r\n|\r|\n/).filter((line) => line.trim());
 
   if (lines.length === 0) return { finalResult: "", regexResult: "", steps: [] };
   if (lines.length === 1) return { finalResult: lines[0], regexResult: lines[0], steps: [] };
@@ -82,15 +84,15 @@ const processedData = computed(() => {
       stepIndex: i,
       inputA: prevResult,
       inputB: nextLine,
-      output: newResult
+      output: newResult,
     });
 
     currentResult = newResult;
   }
 
-  const escapedDiffChar = diffChar.value.replace(/[.*+?^${}()|[\\]/g, '\\$&');
-  const regexPattern = new RegExp(`${escapedDiffChar}+`, 'g');
-  const regexResult = currentResult.replace(regexPattern, '(.+?)');
+  const escapedDiffChar = diffChar.value.replace(/[.*+?^${}()|[\\]/g, "\\$&");
+  const regexPattern = new RegExp(`${escapedDiffChar}+`, "g");
+  const regexResult = currentResult.replace(regexPattern, "(.+?)");
 
   return { finalResult: currentResult, regexResult, steps };
 });
@@ -115,7 +117,7 @@ const processedData = computed(() => {
             v-model="diffChar"
             @input="limitDiffChar"
             class="form-control form-control-sm text-center font-monospace"
-            style="width: 3rem;"
+            style="width: 3rem"
           />
         </div>
         <div class="col-auto ms-auto">
@@ -124,7 +126,7 @@ const processedData = computed(() => {
             <label
               class="form-check-label small fw-bold text-muted text-uppercase"
               for="showSteps"
-              style="font-size: 0.75rem;"
+              style="font-size: 0.75rem"
             >
               Show Calculation Steps
             </label>
@@ -151,7 +153,7 @@ const processedData = computed(() => {
       <!-- Result Area -->
       <div class="col-lg-6 mb-4">
         <ToolCard title="Processed Results" class="h-100">
-          <div class="overflow-auto" style="min-height: 382px;">
+          <div class="overflow-auto" style="min-height: 382px">
             <div v-if="!inputText.trim()" class="text-center text-muted py-5 small">
               Results will appear here
             </div>
@@ -162,14 +164,14 @@ const processedData = computed(() => {
                 <div class="d-flex justify-content-between align-items-center mb-1">
                   <label
                     class="small fw-bold text-uppercase text-muted mb-0"
-                    style="font-size: 0.7rem;"
+                    style="font-size: 0.7rem"
                     >Regex Pattern</label
                   >
                   <CopyButton :content="processedData.regexResult" />
                 </div>
                 <div
                   class="p-3 border rounded bg-white font-monospace text-break small"
-                  style="color: #d946ef;"
+                  style="color: #d946ef"
                 >
                   {{ processedData.regexResult || "(No input)" }}
                 </div>
@@ -180,7 +182,7 @@ const processedData = computed(() => {
                 <div class="d-flex justify-content-between align-items-center mb-1">
                   <label
                     class="small fw-bold text-uppercase text-muted mb-0"
-                    style="font-size: 0.7rem;"
+                    style="font-size: 0.7rem"
                     >Final Folded Result</label
                   >
                   <CopyButton :content="processedData.finalResult" />
@@ -194,7 +196,7 @@ const processedData = computed(() => {
               <div v-if="showSteps && processedData.steps.length > 0">
                 <label
                   class="small fw-bold text-uppercase text-muted mb-2 d-block"
-                  style="font-size: 0.7rem;"
+                  style="font-size: 0.7rem"
                   >Step-by-Step Evolution</label
                 >
                 <div
@@ -203,10 +205,10 @@ const processedData = computed(() => {
                   class="card mb-2 border-0 shadow-none bg-white"
                 >
                   <div class="card-body p-2 border rounded">
-                    <span class="badge bg-info text-dark mb-2" style="font-size: 0.6rem;"
+                    <span class="badge bg-info text-dark mb-2" style="font-size: 0.6rem"
                       >Step {{ step.stepIndex }}</span
                     >
-                    <div class="row g-1 font-monospace" style="font-size: 0.75rem;">
+                    <div class="row g-1 font-monospace" style="font-size: 0.75rem">
                       <div class="col-1 text-muted text-end">A:</div>
                       <div class="col-11 text-break">{{ step.inputA }}</div>
 

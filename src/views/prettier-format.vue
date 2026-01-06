@@ -160,7 +160,7 @@ const parserOptions = [
 
 const input = ref(`function greet(name){console.log("Hello, " + name + "!")}`);
 const formatted = ref("");
-const selectedParser = ref<typeof parserOptions[number]["value"]>("babel");
+const selectedParser = ref<(typeof parserOptions)[number]["value"]>("babel");
 const printWidth = ref(80);
 const tabWidth = ref(2);
 const useSemi = ref(true);
@@ -186,17 +186,12 @@ const plugins = [
 
 const jsLikeParsers = new Set(["babel", "babel-ts", "typescript", "acorn", "flow", "meriyah"]);
 const cssParsers = new Set(["css", "scss", "less"]);
-const singleQuoteFriendly = new Set([
-  ...jsLikeParsers,
-  ...cssParsers,
-  "markdown",
-  "mdx",
-  "yaml",
-]);
+const singleQuoteFriendly = new Set([...jsLikeParsers, ...cssParsers, "markdown", "mdx", "yaml"]);
 
 const visibility = computed(() => ({
   supportsSemicolons: jsLikeParsers.has(selectedParser.value),
-  supportsTrailingComma: jsLikeParsers.has(selectedParser.value) || selectedParser.value === "graphql",
+  supportsTrailingComma:
+    jsLikeParsers.has(selectedParser.value) || selectedParser.value === "graphql",
   supportsSingleQuote: singleQuoteFriendly.has(selectedParser.value),
 }));
 

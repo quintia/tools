@@ -24,11 +24,7 @@ const displayTime = computed(() => formatTime(timeLeft.value));
 
 const progress = computed(() => {
   const total =
-    mode.value === "work"
-      ? WORK_TIME
-      : mode.value === "shortBreak"
-      ? SHORT_BREAK
-      : LONG_BREAK;
+    mode.value === "work" ? WORK_TIME : mode.value === "shortBreak" ? SHORT_BREAK : LONG_BREAK;
   return ((total - timeLeft.value) / total) * 100;
 });
 
@@ -108,7 +104,7 @@ const setMode = (newMode: typeof mode.value) => {
 };
 
 watch(displayTime, (newTime) => {
-  document.title = `${newTime} - ${mode.value === 'work' ? 'Work' : 'Break'}`;
+  document.title = `${newTime} - ${mode.value === "work" ? "Work" : "Break"}`;
 });
 
 onUnmounted(() => {
@@ -182,11 +178,11 @@ onUnmounted(() => {
             <tbody>
               <tr>
                 <th>Status</th>
-                <td>{{ isRunning ? 'Running' : 'Paused' }}</td>
+                <td>{{ isRunning ? "Running" : "Paused" }}</td>
               </tr>
               <tr>
                 <th>Current Mode</th>
-                <td class="text-capitalize">{{ mode.replace(/([A-Z])/g, ' $1') }}</td>
+                <td class="text-capitalize">{{ mode.replace(/([A-Z])/g, " $1") }}</td>
               </tr>
               <tr>
                 <th>Sessions Completed</th>

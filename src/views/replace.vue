@@ -10,10 +10,7 @@ import { generateDiffFile } from "@git-diff-view/file";
 
 type CompiledOniguruma = ReturnType<typeof toRegExpDetails>;
 
-function compileOnigurumaRegex(
-  pattern: string,
-  options: { flags?: string; target?: string } = {},
-) {
+function compileOnigurumaRegex(pattern: string, options: { flags?: string; target?: string } = {}) {
   if (pattern.trim() === "") return { compiled: null, error: null };
   const rawFlags = options.flags?.replace(/\s+/g, "").trim();
   const toRegExpOptions: ToRegExpOptions = {
@@ -36,11 +33,7 @@ function createOnigurumaRegExp(compiled: CompiledOniguruma): RegExp {
   return new RegExp(compiled.pattern, compiled.flags);
 }
 
-function replaceMatches(
-  text: string,
-  compiled: CompiledOniguruma,
-  replacement: string,
-): string {
+function replaceMatches(text: string, compiled: CompiledOniguruma, replacement: string): string {
   const regex = createOnigurumaRegExp(compiled);
   return text.replace(regex, replacement);
 }
