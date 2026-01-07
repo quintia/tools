@@ -12,6 +12,7 @@ const sourceImageUrl = ref<string | null>(null);
 const resultImageUrl = ref<string | null>(null);
 const cropper = ref<InstanceType<typeof Cropper> | null>(null);
 const isProcessing = ref(false);
+const baseSize = reactive({ width: 0, height: 0 });
 
 const config = reactive({
 	width: 0,
@@ -31,10 +32,14 @@ const units = {
 	mm: 96 / 25.4,
 };
 
-const toPx = (val: number, unit: string) =>
-	val * (units[unit as keyof typeof units] || 1);
-const fromPx = (val: number, unit: string) =>
-	Number((val / (units[unit as keyof typeof units] || 1)).toFixed(2));
+const toPx = (val: number, unit: string, base = 0) => {
+	if (unit === "%") return base ? (val / 100) * base : 0;
+	return val * (units[unit as keyof typeof units] || 1);
+};
+const fromPx = (val: number, unit: string, base = 0) => {
+	if (unit === "%") return base ? Number(((val / base) * 100).toFixed(2)) : 0;
+	return Number((val / (units[unit as keyof typeof units] || 1)).toFixed(2));
+};
 
 const handleFileChange = (event: Event) => {
 	const target = event.target as HTMLInputElement;
@@ -53,9 +58,11 @@ const handleFileChange = (event: Event) => {
 
 const handleCropChange = ({ canvas }: { canvas: HTMLCanvasElement | null }) => {
 	if (canvas) {
+		baseSize.width = canvas.width;
+		baseSize.height = canvas.height;
 		if (!config.width || config.maintainAspectRatio) {
-			config.width = fromPx(canvas.width, config.unit);
-			config.height = fromPx(canvas.height, config.unit);
+			config.width = fromPx(canvas.width, config.unit, baseSize.width);
+			config.height = fromPx(canvas.height, config.unit, baseSize.height);
 		}
 		resultImageUrl.value = canvas.toDataURL(config.format, config.quality);
 	}
@@ -66,8 +73,12 @@ const applyResize = () => {
 	const { canvas } = cropper.value.getResult();
 	if (canvas) {
 		isProcessing.value = true;
-		const targetWidth = Math.round(toPx(config.width, config.unit));
-		const targetHeight = Math.round(toPx(config.height, config.unit));
+		const targetWidth = Math.round(
+			toPx(config.width, config.unit, baseSize.width),
+		);
+		const targetHeight = Math.round(
+			toPx(config.height, config.unit, baseSize.height),
+		);
 
 		const resizedCanvas = document.createElement("canvas");
 		resizedCanvas.width = targetWidth;
@@ -86,19 +97,23 @@ const applyResize = () => {
 
 const updateUnit = () => {
 	// Convert current values from old unit to px, then to new unit
-	const pxW = toPx(config.width, prevUnit.value);
-	const pxH = toPx(config.height, prevUnit.value);
-	config.width = fromPx(pxW, config.unit);
-	config.height = fromPx(pxH, config.unit);
+	const pxW = toPx(config.width, prevUnit.value, baseSize.width);
+	const pxH = toPx(config.height, prevUnit.value, baseSize.height);
+	config.width = fromPx(pxW, config.unit, baseSize.width);
+	config.height = fromPx(pxH, config.unit, baseSize.height);
 	prevUnit.value = config.unit;
 };
 
 const updateWidth = (val: number) => {
 	if (config.maintainAspectRatio && cropper.value) {
-		const { canvas } = cropper.value.getResult();
-		if (canvas) {
-			const ratio = canvas.height / canvas.width;
-			config.height = Math.round(val * ratio);
+		if (config.unit === "%") {
+			config.height = val;
+		} else {
+			const { canvas } = cropper.value.getResult();
+			if (canvas) {
+				const ratio = canvas.height / canvas.width;
+				config.height = Math.round(val * ratio);
+			}
 		}
 	}
 	applyResize();
@@ -106,10 +121,14 @@ const updateWidth = (val: number) => {
 
 const updateHeight = (val: number) => {
 	if (config.maintainAspectRatio && cropper.value) {
-		const { canvas } = cropper.value.getResult();
-		if (canvas) {
-			const ratio = canvas.width / canvas.height;
-			config.width = Math.round(val * ratio);
+		if (config.unit === "%") {
+			config.width = val;
+		} else {
+			const { canvas } = cropper.value.getResult();
+			if (canvas) {
+				const ratio = canvas.width / canvas.height;
+				config.width = Math.round(val * ratio);
+			}
 		}
 	}
 	applyResize();
@@ -163,6 +182,7 @@ watch([() => config.format, () => config.quality], applyResize);
             <option value="cm">Centimeters (cm)</option>
             <option value="mm">Millimeters (mm)</option>
             <option value="in">Inches (in)</option>
+            <option value="%">Percent (%)</option>
           </select>
         </div>
         <div class="col-md-2">
