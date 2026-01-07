@@ -27,6 +27,10 @@ const routes = [
 		component: () => import("./views/regex-cheat-sheet.vue"),
 	},
 	{
+		path: "/context-free-grammar",
+		component: () => import("./views/context-free-grammar.vue"),
+	},
+	{
 		path: "/word-count",
 		component: () => import("./views/word-count.vue"),
 	},

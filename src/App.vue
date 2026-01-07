@@ -62,6 +62,13 @@
                 >
                   📚 Regex Cheat Sheet
                 </RouterLink>
+								<RouterLink
+                  class="list-group-item list-group-item-action"
+                  active-class="active"
+                  to="/context-free-grammar"
+                >
+              		📚 Context-Free Grammar
+                </RouterLink>
                 <RouterLink
                   class="list-group-item list-group-item-action"
                   active-class="active"
