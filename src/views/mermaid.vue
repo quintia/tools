@@ -143,9 +143,9 @@ watch(
         <ToolCard title="Mermaid Code" class="h-100" no-padding>
           <MonospaceEditor
             v-model="code"
+            language="mermaid"
             :rows="15"
             placeholder="graph TD; A-->B;"
-            class="mermaid-textarea"
           />
         </ToolCard>
       </div>
@@ -181,10 +181,6 @@ watch(
 </template>
 
 <style scoped>
-.mermaid-textarea {
-  min-height: 200px;
-}
-
 .preview-container {
   display: flex;
   justify-content: center;

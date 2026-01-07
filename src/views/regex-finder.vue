@@ -139,11 +139,12 @@ const compiledPreview = computed(() => {
       <div class="row g-3">
         <div class="col-12">
           <label for="pattern" class="form-label fw-bold small">Oniguruma Pattern</label>
-          <input
+          <MonospaceEditor
             id="pattern"
             v-model="pattern"
             placeholder="e.g., \\b\\h+\\b"
-            class="form-control font-monospace"
+            language="regex"
+            single-line
           />
           <div class="form-text mt-0">
             Supports Oniguruma syntax like <span class="font-monospace">\\h</span>,
@@ -190,7 +191,7 @@ const compiledPreview = computed(() => {
     <div class="row">
       <div class="col-lg-6 mb-4">
         <ToolCard title="Input Text" class="h-100" no-padding>
-          <MonospaceEditor v-model="text" :rows="18" />
+          <MonospaceEditor v-model="text" language="regex" :rows="18" />
         </ToolCard>
       </div>
       <div class="col-lg-6 mb-4">

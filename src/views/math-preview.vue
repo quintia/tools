@@ -127,9 +127,9 @@ onMounted(() => {
         <ToolCard title="TeX Input" class="h-100" no-padding>
           <MonospaceEditor
             v-model="input"
+            language="latex"
             :rows="15"
             placeholder="Enter TeX/LaTeX or Xy-pic code here..."
-            class="math-textarea"
           />
         </ToolCard>
       </div>
@@ -160,9 +160,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.math-textarea {
-  min-height: 150px;
-}
 .preview-container {
   min-height: 200px;
   display: flex;

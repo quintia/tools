@@ -803,7 +803,7 @@ const matchSummary = computed(() => {
     <div class="row">
       <div class="col-lg-6 mb-4">
         <ToolCard title="BNF Input" class="h-100" no-padding>
-          <MonospaceEditor v-model="bnfInput" :rows="16" />
+          <MonospaceEditor v-model="bnfInput" language="bnf" :rows="16" />
         </ToolCard>
       </div>
       <div class="col-lg-6 mb-4">
@@ -825,7 +825,7 @@ const matchSummary = computed(() => {
           <template #header-actions>
             <CopyButton :content="cnfOutput" />
           </template>
-          <MonospaceEditor :model-value="cnfOutput" bg-light readonly :rows="14" />
+          <MonospaceEditor :model-value="cnfOutput" language="bnf" bg-light readonly :rows="14" />
         </ToolCard>
       </div>
       <div class="col-lg-6 mb-4">
@@ -833,7 +833,7 @@ const matchSummary = computed(() => {
           <template #header-actions>
             <CopyButton :content="gnfOutput" />
           </template>
-          <MonospaceEditor :model-value="gnfOutput" bg-light readonly :rows="14" />
+          <MonospaceEditor :model-value="gnfOutput" language="bnf" bg-light readonly :rows="14" />
         </ToolCard>
       </div>
       <div class="col-12 mb-4">
@@ -841,7 +841,7 @@ const matchSummary = computed(() => {
           <template #header-actions>
             <CopyButton :content="onigurumaPattern" />
           </template>
-          <MonospaceEditor :model-value="onigurumaPattern" bg-light readonly :rows="10" />
+          <MonospaceEditor :model-value="onigurumaPattern" language="regex" bg-light readonly :rows="10" />
           <div v-if="error" class="alert alert-danger m-3 mb-0">
             {{ error }}
           </div>

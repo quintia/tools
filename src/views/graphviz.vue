@@ -157,9 +157,9 @@ watch(
           </template>
           <MonospaceEditor
             v-model="code"
+            language="dot"
             :rows="15"
             placeholder="digraph G { A -> B; }"
-            class="graphviz-textarea"
           />
         </ToolCard>
       </div>
@@ -195,10 +195,6 @@ watch(
 </template>
 
 <style scoped>
-.graphviz-textarea {
-  min-height: 200px;
-}
-
 .preview-container {
   display: flex;
   justify-content: center;

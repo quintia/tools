@@ -96,21 +96,27 @@ const diffFile = computed(() => {
       <div class="row g-3">
         <div class="col-md-6">
           <label for="search" class="form-label fw-bold small">Oniguruma Pattern</label>
-          <input id="search" v-model="search" class="form-control" placeholder="e.g., \\d+" />
-          <div class="form-text">
+          <MonospaceEditor
+            id="search"
+            v-model="search"
+            placeholder="e.g., \\d+"
+            language="regex"
+            single-line
+          />
+          <div class="form-text mt-0">
             Supports Oniguruma syntax like <span class="font-monospace">\\h</span> and inline
             modifiers.
           </div>
         </div>
         <div class="col-md-6">
           <label for="replace" class="form-label fw-bold small">Replacement Text</label>
-          <input
+          <MonospaceEditor
             id="replace"
             v-model="replaceText"
-            class="form-control"
             placeholder="e.g., [number]"
+            single-line
           />
-          <div class="form-text">Supports <span class="font-monospace">$1</span>, <span class="font-monospace">$2</span>, etc. for groups.</div>
+          <div class="form-text mt-0">Supports <span class="font-monospace">$1</span>, <span class="font-monospace">$2</span>, etc. for groups.</div>
         </div>
         <div class="col-md-6">
           <label for="flags" class="form-label fw-bold small">Flags</label>
