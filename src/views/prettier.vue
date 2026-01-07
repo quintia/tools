@@ -80,63 +80,48 @@
 
     <div class="row g-4">
       <div class="col-lg-6">
-        <div class="card h-100 shadow-sm">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <span class="fw-bold">Source Code</span>
+        <ToolCard title="Source Code" class="h-100" no-padding>
+          <template #header-actions>
             <small class="text-muted">Paste any supported language</small>
-          </div>
-          <div class="card-body">
-            <textarea
-              v-model="input"
-              class="form-control font-monospace"
-              rows="18"
-              placeholder="Paste your code here..."
-            ></textarea>
-          </div>
-        </div>
+          </template>
+          <MonospaceEditor
+            v-model="input"
+            :rows="18"
+            placeholder="Paste your code here..."
+          />
+        </ToolCard>
       </div>
 
       <div class="col-lg-6">
-        <div class="card h-100 shadow-sm">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <span class="fw-bold">Formatted Result</span>
-            <div class="d-flex gap-2">
-              <button class="btn btn-sm btn-outline-secondary" type="button" @click="copyOutput">
-                Copy
-              </button>
-            </div>
-          </div>
-          <div class="card-body">
-            <textarea
-              v-model="formatted"
-              class="form-control font-monospace bg-light"
-              rows="18"
+        <ToolCard title="Formatted Result" class="h-100" no-padding>
+          <template #header-actions>
+            <CopyButton :content="formatted" />
+          </template>
+          <div class="position-relative h-100">
+            <LoadingOverlay :loading="isProcessing" message="Formatting..." />
+            <MonospaceEditor
+              :model-value="formatted"
+              :rows="18"
               readonly
-            ></textarea>
-            <div v-if="error" class="alert alert-warning mt-3 mb-0">{{ error }}</div>
+              bg-light
+            />
           </div>
-        </div>
+        </ToolCard>
+        <div v-if="error" class="alert alert-warning mt-3 mb-0">{{ error }}</div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import pluginAcorn from "prettier/plugins/acorn";
-import pluginAngular from "prettier/plugins/angular";
-import pluginBabel from "prettier/plugins/babel";
-import pluginEstree from "prettier/plugins/estree";
-import pluginFlow from "prettier/plugins/flow";
-import pluginGlimmer from "prettier/plugins/glimmer";
-import pluginGraphql from "prettier/plugins/graphql";
-import pluginHtml from "prettier/plugins/html";
-import pluginMarkdown from "prettier/plugins/markdown";
-import pluginMeriyah from "prettier/plugins/meriyah";
-import pluginPostcss from "prettier/plugins/postcss";
-import pluginTypeScript from "prettier/plugins/typescript";
-import pluginYaml from "prettier/plugins/yaml";
-import prettier from "prettier/standalone";
-import { computed, ref, watch } from "vue";
+import * as Comlink from "comlink";
+import { computed, onMounted, ref, watch } from "vue";
+import CopyButton from "../components/CopyButton.vue";
+import MonospaceEditor from "../components/MonospaceEditor.vue";
+import ToolCard from "../components/ToolCard.vue";
+import ToolHeader from "../components/ToolHeader.vue";
+import type { PrettierWorker } from "../workers/prettier-worker";
+import PrettierWorkerClass from "../workers/prettier-worker?worker";
 
 const parserOptions = [
 	{ value: "babel", label: "JavaScript (Babel)" },
@@ -170,22 +155,14 @@ const useSemi = ref(true);
 const singleQuote = ref(false);
 const trailingComma = ref<"none" | "es5" | "all">("es5");
 const error = ref("");
+const isProcessing = ref(false);
 
-const plugins = [
-	pluginAcorn,
-	pluginAngular,
-	pluginBabel,
-	pluginEstree,
-	pluginFlow,
-	pluginGlimmer,
-	pluginGraphql,
-	pluginHtml,
-	pluginMarkdown,
-	pluginMeriyah,
-	pluginPostcss,
-	pluginTypeScript,
-	pluginYaml,
-];
+const worker = ref<Comlink.Remote<PrettierWorker> | null>(null);
+
+onMounted(() => {
+	const w = new PrettierWorkerClass();
+	worker.value = Comlink.wrap<PrettierWorker>(w);
+});
 
 const jsLikeParsers = new Set([
 	"babel",
@@ -215,17 +192,21 @@ const visibility = computed(() => ({
 let formatRunId = 0;
 const formatNow = async () => {
 	const currentRun = ++formatRunId;
-	error.value = "";
 
 	if (!input.value) {
 		formatted.value = "";
+		error.value = "";
 		return;
 	}
 
+	if (!worker.value) return;
+
+	isProcessing.value = true;
+	error.value = "";
+
 	try {
-		const result = await prettier.format(input.value, {
+		const result = await worker.value.format(input.value, {
 			parser: selectedParser.value,
-			plugins,
 			semi: useSemi.value,
 			singleQuote: singleQuote.value,
 			tabWidth: tabWidth.value,
@@ -241,12 +222,11 @@ const formatNow = async () => {
 			error.value =
 				err instanceof Error ? err.message : "Failed to format code.";
 		}
+	} finally {
+		if (currentRun === formatRunId) {
+			isProcessing.value = false;
+		}
 	}
-};
-
-const copyOutput = async () => {
-	if (!formatted.value) return;
-	await navigator.clipboard.writeText(formatted.value);
 };
 
 watch(
@@ -258,6 +238,7 @@ watch(
 		useSemi,
 		singleQuote,
 		trailingComma,
+		worker,
 	],
 	() => {
 		void formatNow();
