@@ -73,7 +73,6 @@ All tools must adhere to the established consistent design language:
 
 ### Coding Practices
 
-- **Logic Extraction:** Complex calculation logic should be extracted from `.vue` files into `src/utils/*.ts` and accompanied by a corresponding `*.test.ts` file.
 - **Language:** The user interface and all documentation/comments must be in **English**.
 - **Reactivity:** Leverage Vue's `computed` properties for real-time data processing to ensure a responsive "instant-feedback" feel.
 - **Safety:** You MUST run `npm run check`, `npm test`, and `npm run build` before finishing any task to ensure code quality and prevent regressions.
