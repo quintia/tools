@@ -131,3 +131,6 @@ dist
 
 # Tesseract local assets
 public/tesseract/
+
+# VSCode settings
+.vscode
