@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Graphviz } from "@hpcc-js/wasm-graphviz";
+import { type Engine, Graphviz } from "@hpcc-js/wasm-graphviz";
 import { onWatcherCleanup, ref, watch } from "vue";
 import DownloadLink from "../components/DownloadLink.vue";
 import LoadingOverlay from "../components/LoadingOverlay.vue";
@@ -57,7 +57,18 @@ async function convertSvgToPng(svgString: string, scale = 2) {
 	return canvas.toDataURL("image/png");
 }
 
+const engines: Engine[] = [
+	"circo",
+	"dot",
+	"fdp",
+	"neato",
+	"osage",
+	"patchwork",
+	"twopi",
+];
+
 const code = ref(DEFAULT_CODE);
+const engine = ref<Engine>("dot");
 const imageUrl = ref("");
 const error = ref("");
 const isRendering = ref(false);
@@ -83,7 +94,7 @@ const renderDiagram = async (dotCode: string) => {
 
 		if (currentRenderId !== lastRenderId) return;
 
-		const svg = graphviz.layout(dotCode, "svg", "dot");
+		const svg = graphviz.layout(dotCode, "svg", engine.value);
 
 		if (currentRenderId !== lastRenderId) return;
 
@@ -108,9 +119,9 @@ const renderDiagram = async (dotCode: string) => {
 };
 
 watch(
-	code,
-	(newCode, oldCode) => {
-		if (oldCode === undefined) {
+	[code, engine],
+	([newCode], oldValue) => {
+		if (oldValue === undefined) {
 			renderDiagram(newCode);
 			return;
 		}
@@ -134,6 +145,16 @@ watch(
     <div class="row">
       <div class="col-lg-6 mb-4">
         <ToolCard title="DOT Code" class="h-100" no-padding>
+          <template #header-actions>
+            <select
+              v-model="engine"
+              class="form-select form-select-sm"
+              style="width: auto"
+              title="Rendering Engine"
+            >
+              <option v-for="e in engines" :key="e" :value="e">{{ e }}</option>
+            </select>
+          </template>
           <MonospaceEditor
             v-model="code"
             :rows="15"
