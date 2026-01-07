@@ -68,6 +68,12 @@ const categories = [
 				description: "Quickly reference regex tokens and examples.",
 			},
 			{
+				icon: "📚",
+				name: "Context-Free Grammar",
+				path: "/context-free-grammar",
+				description: "Generate context-free grammar from text.",
+			},
+			{
 				icon: "📝",
 				name: "Word Count",
 				path: "/word-count",
