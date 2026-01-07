@@ -86,7 +86,7 @@
               <img
                 v-else-if="previewImage"
                 :src="previewImage"
-                class="img-fluid rounded"
+                class="img-fluid rounded shadow-sm"
                 alt="Highlighted code preview"
               />
               <div v-else class="text-muted small">Preview will appear here.</div>
@@ -95,28 +95,17 @@
         </div>
       </div>
     </div>
-
-    <div class="render-target" aria-hidden="true">
-      <div
-        class="code-wrapper font-monospace"
-        :style="wrapperStyle"
-        ref="renderRef"
-        v-html="highlightedHtml"
-      ></div>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { toPng } from "html-to-image";
 import {
 	type BundledLanguage,
 	type BundledTheme,
-	bundledLanguages,
 	bundledLanguagesInfo,
-	bundledThemes,
 	bundledThemesInfo,
-	codeToHtml,
+	codeToTokens,
+	type ThemedToken,
 } from "shiki";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import LoadingOverlay from "../components/LoadingOverlay.vue";
@@ -130,6 +119,10 @@ type ThemeOption = {
 	value: BundledTheme;
 	label: string;
 };
+
+const FONT_STACK =
+	'SF Mono, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace';
+const PADDING = 20;
 
 const languages = computed<LanguageOption[]>(() =>
 	bundledLanguagesInfo
@@ -148,19 +141,19 @@ const themes = computed<ThemeOption[]>(() =>
 
 const code = ref(
 	`function greet(name: string) {
-  return \`Hello, \${name}!\`;
-}
+  return 
+Hello, 
+{name}!
+};
 
 greet("Taniguchi");`,
 );
 const language = ref<BundledLanguage>("typescript");
 const theme = ref<BundledTheme>("github-light");
 const fontSize = ref(14);
-const highlightedHtml = ref("");
 const isRendering = ref(false);
 const isDownloading = ref(false);
 const error = ref("");
-const renderRef = ref<HTMLElement | null>(null);
 const previewImage = ref("");
 let renderTimeout: number | undefined;
 
@@ -168,35 +161,90 @@ const wrapperStyle = computed(() => ({
 	fontSize: `${fontSize.value}px`,
 }));
 
-const generatePng = async () => {
-	if (!renderRef.value) {
-		throw new Error("Preview target is unavailable.");
+const renderToCanvas = (
+	tokens: ThemedToken[][],
+	bg: string,
+	fg: string,
+): string => {
+	const currentFontSize = fontSize.value;
+	const lineHeight = currentFontSize * 1.5;
+	const font = `${currentFontSize}px ${FONT_STACK}`;
+
+	const canvas = document.createElement("canvas");
+	const ctx = canvas.getContext("2d");
+	if (!ctx) throw new Error("Could not get canvas context");
+
+	ctx.font = font;
+
+	// Measure width
+	let maxWidth = 0;
+	for (const line of tokens) {
+		let lineWidth = 0;
+		for (const token of line) {
+			lineWidth += ctx.measureText(token.content).width;
+		}
+		if (lineWidth > maxWidth) maxWidth = lineWidth;
 	}
 
-	return toPng(renderRef.value, {
-		pixelRatio: 2,
-		cacheBust: true,
-		skipFonts: true,
-	});
+	const width = Math.ceil(maxWidth + PADDING * 2);
+	const height = Math.ceil(tokens.length * lineHeight + PADDING * 2);
+
+	// High DPI support
+	const pixelRatio = 2;
+	canvas.width = width * pixelRatio;
+	canvas.height = height * pixelRatio;
+	canvas.style.width = `${width}px`;
+	canvas.style.height = `${height}px`;
+
+	ctx.scale(pixelRatio, pixelRatio);
+
+	// Draw background
+	ctx.fillStyle = bg;
+	ctx.fillRect(0, 0, width, height);
+
+	// Draw text
+	ctx.font = font;
+	ctx.textBaseline = "top";
+
+	let y = PADDING;
+	for (const line of tokens) {
+		let x = PADDING;
+		for (const token of line) {
+			ctx.fillStyle = token.color || fg;
+			ctx.fillText(token.content, x, y);
+			x += ctx.measureText(token.content).width;
+		}
+		y += lineHeight;
+	}
+
+	return canvas.toDataURL("image/png");
 };
 
 const renderHighlight = async () => {
 	error.value = "";
 	isRendering.value = true;
 	try {
-		highlightedHtml.value = await codeToHtml(code.value, {
+		const result = await codeToTokens(code.value, {
 			lang: language.value,
 			theme: theme.value,
 		});
 
-		await nextTick();
-		previewImage.value = await generatePng();
+		// shiki's codeToTokens returns { tokens, bg, fg }
+		// Wait, in some versions it returns structure directly, in others it's inside properties
+		// Checking docs (implied): codeToTokens returns Promise<{ tokens: ThemedToken[][], bg: string, fg: string, ... }>
+
+		previewImage.value = renderToCanvas(
+			result.tokens,
+			result.bg || "#ffffff",
+			result.fg || "#000000",
+		);
 	} catch (renderError) {
 		error.value =
 			renderError instanceof Error
 				? renderError.message
 				: "Failed to render code.";
 		previewImage.value = "";
+		console.error(renderError);
 	} finally {
 		isRendering.value = false;
 	}
@@ -216,20 +264,17 @@ onMounted(() => {
 	renderHighlight();
 });
 
-const downloadPng = async () => {
+const downloadPng = () => {
+	if (!previewImage.value) return;
+
 	isDownloading.value = true;
-	error.value = "";
 	try {
-		const dataUrl = previewImage.value || (await generatePng());
 		const link = document.createElement("a");
-		link.href = dataUrl;
+		link.href = previewImage.value;
 		link.download = `code-highlight-${language.value}.png`;
 		link.click();
 	} catch (downloadError) {
-		error.value =
-			downloadError instanceof Error
-				? downloadError.message
-				: "Unable to generate PNG from the preview.";
+		error.value = "Unable to download the image.";
 	} finally {
 		isDownloading.value = false;
 	}
@@ -237,13 +282,6 @@ const downloadPng = async () => {
 </script>
 
 <style scoped>
-.render-target {
-  position: absolute;
-  top: -9999px;
-  left: -9999px;
-  pointer-events: none;
-}
-
 .code-wrapper {
   min-height: 320px;
   padding: 1rem;
@@ -253,11 +291,12 @@ const downloadPng = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: auto;
 }
 
-.code-wrapper pre {
-  margin: 0;
-  border-radius: 0.5rem;
-  overflow: auto;
+/* Ensure image doesn't overflow container visually but keeps aspect */
+.img-fluid {
+  max-width: 100%;
+  height: auto;
 }
 </style>
