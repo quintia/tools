@@ -141,10 +141,8 @@ const themes = computed<ThemeOption[]>(() =>
 
 const code = ref(
 	`function greet(name: string) {
-  return 
-Hello, 
-{name}!
-};
+  return \`Hello, \${name}!\`;
+}
 
 greet("Taniguchi");`,
 );
