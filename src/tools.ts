@@ -96,6 +96,14 @@ export const tools: Tool[] = [
 		component: () => import("./views/encoding-converter.vue"),
 		category: "Text & Coding",
 	},
+	{
+		path: "/budoux-newline",
+		name: "BudouX Newline Inserter",
+		icon: "✂️",
+		description: "Smart line-breaking for Japanese text at natural boundaries.",
+		component: () => import("./views/budoux-newline.vue"),
+		category: "Text & Coding",
+	},
 	// Math & LaTeX
 	{
 		path: "/unicode-latex",
