@@ -8,6 +8,17 @@ import "prismjs/components/prism-mermaid";
 import "prismjs/components/prism-latex";
 import "prismjs/components/prism-regex";
 import "prismjs/components/prism-bnf";
+import "prismjs/components/prism-json";
+import "prismjs/components/prism-javascript";
+import "prismjs/components/prism-typescript";
+import "prismjs/components/prism-css";
+import "prismjs/components/prism-scss";
+import "prismjs/components/prism-less";
+import "prismjs/components/prism-markup";
+import "prismjs/components/prism-yaml";
+import "prismjs/components/prism-markdown";
+import "prismjs/components/prism-graphql";
+import "prismjs/components/prism-handlebars";
 
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 

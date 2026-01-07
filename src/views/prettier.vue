@@ -86,6 +86,7 @@
           </template>
           <MonospaceEditor
             v-model="input"
+            :language="currentLanguage"
             :rows="18"
             placeholder="Paste your code here..."
           />
@@ -101,6 +102,7 @@
             <LoadingOverlay :loading="isProcessing" message="Formatting..." />
             <MonospaceEditor
               :model-value="formatted"
+              :language="currentLanguage"
               :rows="18"
               readonly
               bg-light
@@ -180,6 +182,21 @@ const singleQuoteFriendly = new Set([
 	"mdx",
 	"yaml",
 ]);
+
+const currentLanguage = computed(() => {
+	const parser = selectedParser.value;
+	if (jsLikeParsers.has(parser)) {
+		return parser.includes("ts") ? "typescript" : "javascript";
+	}
+	if (cssParsers.has(parser)) return parser;
+	if (parser.startsWith("json")) return "json";
+	if (["html", "angular", "vue"].includes(parser)) return "markup";
+	if (["markdown", "mdx"].includes(parser)) return "markdown";
+	if (parser === "yaml") return "yaml";
+	if (parser === "graphql") return "graphql";
+	if (parser === "glimmer") return "handlebars";
+	return "markup";
+});
 
 const visibility = computed(() => ({
 	supportsSemicolons: jsLikeParsers.has(selectedParser.value),
