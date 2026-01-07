@@ -1,72 +1,103 @@
 <script setup lang="ts">
+import { generateDiffFile } from "@git-diff-view/file";
+import { DiffModeEnum, DiffView } from "@git-diff-view/vue";
+import {
+	EmulatedRegExp,
+	type ToRegExpOptions,
+	toRegExpDetails,
+} from "oniguruma-to-es";
 import { computed, ref } from "vue";
-import { EmulatedRegExp, toRegExpDetails, type ToRegExpOptions } from "oniguruma-to-es";
-import ToolHeader from "../components/ToolHeader.vue";
-import ToolCard from "../components/ToolCard.vue";
 import CopyButton from "../components/CopyButton.vue";
 import MonospaceEditor from "../components/MonospaceEditor.vue";
-import { DiffModeEnum, DiffView } from "@git-diff-view/vue";
-import { generateDiffFile } from "@git-diff-view/file";
+import ToolCard from "../components/ToolCard.vue";
+import ToolHeader from "../components/ToolHeader.vue";
 
 type CompiledOniguruma = ReturnType<typeof toRegExpDetails>;
 
-function compileOnigurumaRegex(pattern: string, options: { flags?: string; target?: string } = {}) {
-  if (pattern.trim() === "") return { compiled: null, error: null };
-  const rawFlags = options.flags?.replace(/\s+/g, "").trim();
-  const toRegExpOptions: ToRegExpOptions = {
-    global: true,
-    target: (options.target as any) ?? "auto",
-  };
-  if (rawFlags) toRegExpOptions.flags = rawFlags;
-  try {
-    const details = toRegExpDetails(pattern, toRegExpOptions);
-    return { compiled: details, error: null };
-  } catch (error) {
-    return { compiled: null, error: error instanceof Error ? error.message : String(error) };
-  }
+function compileOnigurumaRegex(
+	pattern: string,
+	options: { flags?: string; target?: string } = {},
+) {
+	if (pattern.trim() === "") return { compiled: null, error: null };
+	const rawFlags = options.flags?.replace(/\s+/g, "").trim();
+	const toRegExpOptions: ToRegExpOptions = {
+		global: true,
+		target: (options.target as ToRegExpOptions["target"]) ?? "auto",
+	};
+	if (rawFlags) toRegExpOptions.flags = rawFlags;
+	try {
+		const details = toRegExpDetails(pattern, toRegExpOptions);
+		return { compiled: details, error: null };
+	} catch (error) {
+		return {
+			compiled: null,
+			error: error instanceof Error ? error.message : String(error),
+		};
+	}
 }
 
 function createOnigurumaRegExp(compiled: CompiledOniguruma): RegExp {
-  if (compiled.options) {
-    return new EmulatedRegExp(compiled.pattern, compiled.flags, compiled.options);
-  }
-  return new RegExp(compiled.pattern, compiled.flags);
+	if (compiled.options) {
+		return new EmulatedRegExp(
+			compiled.pattern,
+			compiled.flags,
+			compiled.options,
+		);
+	}
+	return new RegExp(compiled.pattern, compiled.flags);
 }
 
-function replaceMatches(text: string, compiled: CompiledOniguruma, replacement: string): string {
-  const regex = createOnigurumaRegExp(compiled);
-  return text.replace(regex, replacement);
+function replaceMatches(
+	text: string,
+	compiled: CompiledOniguruma,
+	replacement: string,
+): string {
+	const regex = createOnigurumaRegExp(compiled);
+	return text.replace(regex, replacement);
 }
 
-const text = ref("The year is 2025. The next year will be 2026. My favorite numbers are 7 and 42.");
+const text = ref(
+	"The year is 2025. The next year will be 2026. My favorite numbers are 7 and 42.",
+);
 const replaceText = ref("[year]");
 const search = ref("\\d{4}");
 const flags = ref("");
 
 const compileResult = computed(() =>
-  compileOnigurumaRegex(search.value, { flags: flags.value, target: "auto" }),
+	compileOnigurumaRegex(search.value, { flags: flags.value, target: "auto" }),
 );
 
 const result = computed(() => {
-  try {
-    if (!search.value || !compileResult.value.compiled) return text.value;
-    return replaceMatches(text.value, compileResult.value.compiled, replaceText.value);
-  } catch {
-    return text.value;
-  }
+	try {
+		if (!search.value || !compileResult.value.compiled) return text.value;
+		return replaceMatches(
+			text.value,
+			compileResult.value.compiled,
+			replaceText.value,
+		);
+	} catch {
+		return text.value;
+	}
 });
 
 const diffFile = computed(() => {
-  let oldText = (text.value || "").replace(/\r\n/g, "\n");
-  let newText = (result.value || "").replace(/\r\n/g, "\n");
-  if (oldText === newText) return null;
+	let oldText = (text.value || "").replace(/\r\n/g, "\n");
+	let newText = (result.value || "").replace(/\r\n/g, "\n");
+	if (oldText === newText) return null;
 
-  if (oldText && !oldText.endsWith("\n")) oldText += "\n";
-  if (newText && !newText.endsWith("\n")) newText += "\n";
+	if (oldText && !oldText.endsWith("\n")) oldText += "\n";
+	if (newText && !newText.endsWith("\n")) newText += "\n";
 
-  const file = generateDiffFile("Deleted", oldText, "Added", newText, "plaintext", "plaintext");
-  file.initRaw();
-  return file;
+	const file = generateDiffFile(
+		"Deleted",
+		oldText,
+		"Added",
+		newText,
+		"plaintext",
+		"plaintext",
+	);
+	file.initRaw();
+	return file;
 });
 </script>
 

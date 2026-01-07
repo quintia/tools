@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
 import * as Comlink from "comlink";
-import type { MupdfWorker } from "../workers/mupdf-worker";
-import PdfViewer from "../components/PdfViewer.vue";
-import ToolHeader from "../components/ToolHeader.vue";
-import ToolCard from "../components/ToolCard.vue";
+import { onMounted, onUnmounted, ref } from "vue";
 import CopyButton from "../components/CopyButton.vue";
 import FilePicker from "../components/FilePicker.vue";
 import MonospaceEditor from "../components/MonospaceEditor.vue";
+import PdfViewer from "../components/PdfViewer.vue";
+import ToolCard from "../components/ToolCard.vue";
+import ToolHeader from "../components/ToolHeader.vue";
+import type { MupdfWorker } from "../workers/mupdf-worker";
 
 const fileData = ref<Uint8Array | null>(null);
 const fileName = ref<string | null>(null);
@@ -18,44 +18,46 @@ let worker: Worker | null = null;
 let api: Comlink.Remote<MupdfWorker> | null = null;
 
 onMounted(() => {
-  worker = new Worker(new URL("../workers/mupdf-worker.ts", import.meta.url), { type: "module" });
-  api = Comlink.wrap<MupdfWorker>(worker);
+	worker = new Worker(new URL("../workers/mupdf-worker.ts", import.meta.url), {
+		type: "module",
+	});
+	api = Comlink.wrap<MupdfWorker>(worker);
 });
 
 onUnmounted(() => {
-  worker?.terminate();
+	worker?.terminate();
 });
 
 const handleFileChange = (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  const file = target.files?.[0];
-  if (file && file.type === "application/pdf") {
-    fileName.value = file.name;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const arrayBuffer = e.target?.result as ArrayBuffer;
-      fileData.value = new Uint8Array(arrayBuffer);
-      resultText.value = "";
-    };
-    reader.readAsArrayBuffer(file);
-  }
+	const target = event.target as HTMLInputElement;
+	const file = target.files?.[0];
+	if (file && file.type === "application/pdf") {
+		fileName.value = file.name;
+		const reader = new FileReader();
+		reader.onload = (e) => {
+			const arrayBuffer = e.target?.result as ArrayBuffer;
+			fileData.value = new Uint8Array(arrayBuffer);
+			resultText.value = "";
+		};
+		reader.readAsArrayBuffer(file);
+	}
 };
 
 const extractText = async () => {
-  if (!fileData.value || !api) return;
+	if (!fileData.value || !api) return;
 
-  isProcessing.value = true;
-  resultText.value = "";
+	isProcessing.value = true;
+	resultText.value = "";
 
-  try {
-    const combinedText = await api.extractText(fileData.value);
-    resultText.value = combinedText;
-  } catch (error) {
-    console.error("PDF Text Extraction Error:", error);
-    alert("An error occurred while extracting text from the PDF.");
-  } finally {
-    isProcessing.value = false;
-  }
+	try {
+		const combinedText = await api.extractText(fileData.value);
+		resultText.value = combinedText;
+	} catch (error) {
+		console.error("PDF Text Extraction Error:", error);
+		alert("An error occurred while extracting text from the PDF.");
+	} finally {
+		isProcessing.value = false;
+	}
 };
 </script>
 

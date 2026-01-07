@@ -2,19 +2,19 @@
 import { ref } from "vue";
 
 const props = defineProps<{
-  content: string;
+	content: string;
 }>();
 
 const copyBtnText = ref("Copy");
 
 const copyToClipboard = () => {
-  if (!props.content) return;
-  navigator.clipboard.writeText(props.content).then(() => {
-    copyBtnText.value = "Copied!";
-    setTimeout(() => {
-      copyBtnText.value = "Copy";
-    }, 2000);
-  });
+	if (!props.content) return;
+	navigator.clipboard.writeText(props.content).then(() => {
+		copyBtnText.value = "Copied!";
+		setTimeout(() => {
+			copyBtnText.value = "Copy";
+		}, 2000);
+	});
 };
 </script>
 

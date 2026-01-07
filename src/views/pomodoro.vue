@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, onUnmounted, watch } from "vue";
-import ToolHeader from "../components/ToolHeader.vue";
+import { computed, onUnmounted, ref, watch } from "vue";
 import ToolCard from "../components/ToolCard.vue";
+import ToolHeader from "../components/ToolHeader.vue";
 
 const WORK_TIME = 25 * 60;
 const SHORT_BREAK = 5 * 60;
@@ -15,101 +15,109 @@ const sessionsCompleted = ref(0);
 let timerId: number | null = null;
 
 const formatTime = (seconds: number) => {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+	const m = Math.floor(seconds / 60);
+	const s = seconds % 60;
+	return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 };
 
 const displayTime = computed(() => formatTime(timeLeft.value));
 
 const progress = computed(() => {
-  const total =
-    mode.value === "work" ? WORK_TIME : mode.value === "shortBreak" ? SHORT_BREAK : LONG_BREAK;
-  return ((total - timeLeft.value) / total) * 100;
+	const total =
+		mode.value === "work"
+			? WORK_TIME
+			: mode.value === "shortBreak"
+				? SHORT_BREAK
+				: LONG_BREAK;
+	return ((total - timeLeft.value) / total) * 100;
 });
 
 const playAlarm = (count: number = 1) => {
-  const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+	const audioCtx = new (
+		window.AudioContext ||
+		(window as unknown as { webkitAudioContext: typeof AudioContext })
+			.webkitAudioContext
+	)();
 
-  for (let i = 0; i < count; i++) {
-    const startTime = audioCtx.currentTime + i * 0.25;
-    const duration = 0.1;
+	for (let i = 0; i < count; i++) {
+		const startTime = audioCtx.currentTime + i * 0.25;
+		const duration = 0.1;
 
-    const oscillator = audioCtx.createOscillator();
-    const gainNode = audioCtx.createGain();
+		const oscillator = audioCtx.createOscillator();
+		const gainNode = audioCtx.createGain();
 
-    oscillator.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
+		oscillator.connect(gainNode);
+		gainNode.connect(audioCtx.destination);
 
-    oscillator.type = "sine";
-    oscillator.frequency.setValueAtTime(880, startTime);
+		oscillator.type = "sine";
+		oscillator.frequency.setValueAtTime(880, startTime);
 
-    gainNode.gain.setValueAtTime(0.1, startTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+		gainNode.gain.setValueAtTime(0.1, startTime);
+		gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
 
-    oscillator.start(startTime);
-    oscillator.stop(startTime + duration);
-  }
+		oscillator.start(startTime);
+		oscillator.stop(startTime + duration);
+	}
 };
 
 const startTimer = () => {
-  if (isRunning.value) return;
-  isRunning.value = true;
-  timerId = window.setInterval(() => {
-    if (timeLeft.value > 0) {
-      timeLeft.value--;
-    } else {
-      const alarmCount = mode.value === "work" ? 6 : 3;
-      stopTimer();
-      playAlarm(alarmCount);
-      handleSessionEnd();
-    }
-  }, 1000);
+	if (isRunning.value) return;
+	isRunning.value = true;
+	timerId = window.setInterval(() => {
+		if (timeLeft.value > 0) {
+			timeLeft.value--;
+		} else {
+			const alarmCount = mode.value === "work" ? 6 : 3;
+			stopTimer();
+			playAlarm(alarmCount);
+			handleSessionEnd();
+		}
+	}, 1000);
 };
 
 const stopTimer = () => {
-  if (timerId !== null) {
-    clearInterval(timerId);
-    timerId = null;
-  }
-  isRunning.value = false;
+	if (timerId !== null) {
+		clearInterval(timerId);
+		timerId = null;
+	}
+	isRunning.value = false;
 };
 
 const resetTimer = () => {
-  stopTimer();
-  if (mode.value === "work") timeLeft.value = WORK_TIME;
-  else if (mode.value === "shortBreak") timeLeft.value = SHORT_BREAK;
-  else timeLeft.value = LONG_BREAK;
+	stopTimer();
+	if (mode.value === "work") timeLeft.value = WORK_TIME;
+	else if (mode.value === "shortBreak") timeLeft.value = SHORT_BREAK;
+	else timeLeft.value = LONG_BREAK;
 };
 
 const handleSessionEnd = () => {
-  if (mode.value === "work") {
-    sessionsCompleted.value++;
-    if (sessionsCompleted.value % 4 === 0) {
-      setMode("longBreak");
-    } else {
-      setMode("shortBreak");
-    }
-  } else {
-    setMode("work");
-  }
+	if (mode.value === "work") {
+		sessionsCompleted.value++;
+		if (sessionsCompleted.value % 4 === 0) {
+			setMode("longBreak");
+		} else {
+			setMode("shortBreak");
+		}
+	} else {
+		setMode("work");
+	}
 };
 
 const setMode = (newMode: typeof mode.value) => {
-  stopTimer();
-  mode.value = newMode;
-  if (newMode === "work") timeLeft.value = WORK_TIME;
-  else if (newMode === "shortBreak") timeLeft.value = SHORT_BREAK;
-  else timeLeft.value = LONG_BREAK;
+	stopTimer();
+	mode.value = newMode;
+	if (newMode === "work") timeLeft.value = WORK_TIME;
+	else if (newMode === "shortBreak") timeLeft.value = SHORT_BREAK;
+	else timeLeft.value = LONG_BREAK;
 };
 
 watch(displayTime, (newTime) => {
-  document.title = `${newTime} - ${mode.value === "work" ? "Work" : "Break"}`;
+	document.title = `${newTime} - ${mode.value === "work" ? "Work" : "Break"}`;
 });
 
 onUnmounted(() => {
-  stopTimer();
-  document.title = "Taniguchi's Tools";
+	stopTimer();
+	document.title = "Taniguchi's Tools";
 });
 </script>
 

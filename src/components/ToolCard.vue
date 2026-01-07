@@ -1,7 +1,7 @@
 <script setup lang="ts">
 defineProps<{
-  title?: string;
-  noPadding?: boolean;
+	title?: string;
+	noPadding?: boolean;
 }>();
 </script>
 

@@ -1,29 +1,36 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import ToolHeader from "../components/ToolHeader.vue";
-import ToolCard from "../components/ToolCard.vue";
-import MonospaceEditor from "../components/MonospaceEditor.vue";
-import { DiffModeEnum, DiffView } from "@git-diff-view/vue";
 import { generateDiffFile } from "@git-diff-view/file";
+import { DiffModeEnum, DiffView } from "@git-diff-view/vue";
+import { computed, ref } from "vue";
+import MonospaceEditor from "../components/MonospaceEditor.vue";
+import ToolCard from "../components/ToolCard.vue";
+import ToolHeader from "../components/ToolHeader.vue";
 
 const oldText = ref(
-  "This is the original text.\nIt has several lines.\nOne line will be removed.\nAnother will be changed.",
+	"This is the original text.\nIt has several lines.\nOne line will be removed.\nAnother will be changed.",
 );
 const newText = ref(
-  "This is the modified text.\nIt has several lines.\nAnother has been changed.\nOne line was added.",
+	"This is the modified text.\nIt has several lines.\nAnother has been changed.\nOne line was added.",
 );
 
 const diffFile = computed(() => {
-  let oldValue = (oldText.value || "").replace(/\r\n/g, "\n");
-  let newValue = (newText.value || "").replace(/\r\n/g, "\n");
-  if (oldValue === newValue) return null;
+	let oldValue = (oldText.value || "").replace(/\r\n/g, "\n");
+	let newValue = (newText.value || "").replace(/\r\n/g, "\n");
+	if (oldValue === newValue) return null;
 
-  if (oldValue && !oldValue.endsWith("\n")) oldValue += "\n";
-  if (newValue && !newValue.endsWith("\n")) newValue += "\n";
+	if (oldValue && !oldValue.endsWith("\n")) oldValue += "\n";
+	if (newValue && !newValue.endsWith("\n")) newValue += "\n";
 
-  const file = generateDiffFile("oldText", oldValue, "newText", newValue, "plaintext", "plaintext");
-  file.initRaw();
-  return file;
+	const file = generateDiffFile(
+		"oldText",
+		oldValue,
+		"newText",
+		newValue,
+		"plaintext",
+		"plaintext",
+	);
+	file.initRaw();
+	return file;
 });
 </script>
 

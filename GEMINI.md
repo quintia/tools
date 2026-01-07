@@ -12,7 +12,7 @@ This project, "Taniguchi's Tools," is a comprehensive, web-based suite of develo
 - **Styling:** Bootstrap 5 with Bootswatch "Lumen" theme
 - **Routing:** Vue Router
 - **Testing:** Node.js native test runner (`node:test`) executed via `tsx`
-- **Linting/Formatting:** Oxlint and Oxfmt
+- **Linting/Formatting:** Biome
 
 ### Architecture
 
@@ -49,9 +49,7 @@ Runs unit tests for utility logic using the Node.js test runner and `tsx`.
 
 ### Code Quality
 
-- **Type Checking:** `npm run check` (runs `tsc` and `vue-tsc`)
-- **Linting:** `npm run lint` (runs `oxlint`)
-- **Formatting:** `npm run format` (runs `oxfmt`)
+- **Type Checking:** `npm run check`
 
 ## Development Conventions
 
@@ -71,4 +69,4 @@ All tools must adhere to the established consistent design language:
 - **Logic Extraction:** Complex calculation logic should be extracted from `.vue` files into `src/utils/*.ts` and accompanied by a corresponding `*.test.ts` file.
 - **Language:** The user interface and all documentation/comments must be in **English**.
 - **Reactivity:** Leverage Vue's `computed` properties for real-time data processing to ensure a responsive "instant-feedback" feel.
-- **Safety:** You MUST run `npm run lint`, `npm run format`, `npm run check`, `npm test`, and `npm run build` before finishing any task to ensure code quality and prevent regressions.
+- **Safety:** You MUST run `npm run check`, `npm test`, and `npm run build` before finishing any task to ensure code quality and prevent regressions.

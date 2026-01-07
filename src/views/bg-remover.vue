@@ -1,146 +1,159 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted, onUnmounted, watch } from "vue";
+import { onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { Cropper } from "vue-advanced-cropper";
 import "vue-advanced-cropper/dist/style.css";
 import * as Comlink from "comlink";
-import type { OpencvWorker } from "../workers/opencv-worker";
-import ToolHeader from "../components/ToolHeader.vue";
-import ToolCard from "../components/ToolCard.vue";
 import DownloadLink from "../components/DownloadLink.vue";
 import FilePicker from "../components/FilePicker.vue";
 import LoadingOverlay from "../components/LoadingOverlay.vue";
+import ToolCard from "../components/ToolCard.vue";
+import ToolHeader from "../components/ToolHeader.vue";
+import type { OpencvWorker } from "../workers/opencv-worker";
 
 const sourceImageUrl = ref<string | null>(null);
 const resultImageUrl = ref<string | null>(null);
 const isProcessing = ref(false);
 const isOpenCvReady = ref(false);
 const errorMessage = ref<string | null>(null);
-const cropper = ref<any>(null);
+const cropper = ref<InstanceType<typeof Cropper> | null>(null);
 
 const config = reactive({
-  mode: "grabcut" as "magic" | "grabcut" | "global",
-  tolerance: 30,
-  lastX: -1,
-  lastY: -1,
-  hasSelected: false,
+	mode: "grabcut" as "magic" | "grabcut" | "global",
+	tolerance: 30,
+	lastX: -1,
+	lastY: -1,
+	hasSelected: false,
 });
 
 let worker: Worker | null = null;
 let api: Comlink.Remote<OpencvWorker> | null = null;
 
 onMounted(() => {
-  worker = new Worker(new URL("../workers/opencv-worker.ts", import.meta.url), {
-    type: "module",
-  });
-  api = Comlink.wrap<OpencvWorker>(worker);
-  isOpenCvReady.value = true;
+	worker = new Worker(new URL("../workers/opencv-worker.ts", import.meta.url), {
+		type: "module",
+	});
+	api = Comlink.wrap<OpencvWorker>(worker);
+	isOpenCvReady.value = true;
 });
 
 onUnmounted(() => {
-  worker?.terminate();
+	worker?.terminate();
 });
 
 const handleFileChange = (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  const file = target.files?.[0];
-  if (file) {
-    isProcessing.value = true;
-    errorMessage.value = null;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      sourceImageUrl.value = e.target?.result as string;
-      resultImageUrl.value = null;
-      config.hasSelected = false;
-      isProcessing.value = false;
-    };
-    reader.readAsDataURL(file);
-  }
+	const target = event.target as HTMLInputElement;
+	const file = target.files?.[0];
+	if (file) {
+		isProcessing.value = true;
+		errorMessage.value = null;
+		const reader = new FileReader();
+		reader.onload = (e) => {
+			sourceImageUrl.value = e.target?.result as string;
+			resultImageUrl.value = null;
+			config.hasSelected = false;
+			isProcessing.value = false;
+		};
+		reader.readAsDataURL(file);
+	}
 };
 
 const pickColor = (event: MouseEvent) => {
-  if (
-    (config.mode !== "magic" && config.mode !== "global") ||
-    !sourceImageUrl.value ||
-    !isOpenCvReady.value
-  )
-    return;
+	if (
+		(config.mode !== "magic" && config.mode !== "global") ||
+		!sourceImageUrl.value ||
+		!isOpenCvReady.value
+	)
+		return;
 
-  const imgElement = event.target as HTMLImageElement;
-  const rect = imgElement.getBoundingClientRect();
-  const scaleX = imgElement.naturalWidth / rect.width;
-  const scaleY = imgElement.naturalHeight / rect.height;
+	const imgElement = event.target as HTMLImageElement;
+	const rect = imgElement.getBoundingClientRect();
+	const scaleX = imgElement.naturalWidth / rect.width;
+	const scaleY = imgElement.naturalHeight / rect.height;
 
-  config.lastX = Math.round((event.clientX - rect.left) * scaleX);
-  config.lastY = Math.round((event.clientY - rect.top) * scaleY);
-  config.hasSelected = true;
-  processImage();
+	config.lastX = Math.round((event.clientX - rect.left) * scaleX);
+	config.lastY = Math.round((event.clientY - rect.top) * scaleY);
+	config.hasSelected = true;
+	processImage();
 };
 
 const processImage = async () => {
-  if (!sourceImageUrl.value || !isOpenCvReady.value || !api) return;
+	const sourceUrl = sourceImageUrl.value;
+	if (!sourceUrl || !isOpenCvReady.value || !api) return;
 
-  isProcessing.value = true;
-  errorMessage.value = null;
+	isProcessing.value = true;
+	errorMessage.value = null;
 
-  const img = new Image();
-  img.onload = async () => {
-    const canvas = document.createElement("canvas");
-    canvas.width = img.width;
-    canvas.height = img.height;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.drawImage(img, 0, 0);
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+	const img = new Image();
+	img.onload = async () => {
+		const canvas = document.createElement("canvas");
+		canvas.width = img.width;
+		canvas.height = img.height;
+		const ctx = canvas.getContext("2d");
+		if (!ctx) return;
+		ctx.drawImage(img, 0, 0);
+		const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-    try {
-      let resultData: ImageData;
-      if (config.mode === "grabcut" && cropper.value) {
-        const { coordinates } = cropper.value.getResult();
-        resultData = await api!.grabCut(imageData, {
-          left: Math.round(coordinates.left),
-          top: Math.round(coordinates.top),
-          width: Math.round(coordinates.width),
-          height: Math.round(coordinates.height),
-        });
-      } else if (config.mode === "magic") {
-        resultData = await api!.process(imageData, config.lastX, config.lastY, config.tolerance);
-      } else {
-        resultData = await api!.globalRemoval(
-          imageData,
-          config.lastX,
-          config.lastY,
-          config.tolerance,
-        );
-      }
+		try {
+			const currentApi = api;
+			if (!currentApi) return;
 
-      const resCanvas = document.createElement("canvas");
-      resCanvas.width = resultData.width;
-      resCanvas.height = resultData.height;
-      const resCtx = resCanvas.getContext("2d");
-      resCtx?.putImageData(resultData, 0, 0);
-      resultImageUrl.value = resCanvas.toDataURL("image/png");
-    } catch (err: any) {
-      errorMessage.value = err.message || "Processing failed";
-    } finally {
-      isProcessing.value = false;
-    }
-  };
-  img.src = sourceImageUrl.value!;
+			let resultData: ImageData;
+			if (config.mode === "grabcut" && cropper.value) {
+				const { coordinates } = cropper.value.getResult();
+				resultData = await currentApi.grabCut(imageData, {
+					left: Math.round(coordinates.left),
+					top: Math.round(coordinates.top),
+					width: Math.round(coordinates.width),
+					height: Math.round(coordinates.height),
+				});
+			} else if (config.mode === "magic") {
+				resultData = await currentApi.process(
+					imageData,
+					config.lastX,
+					config.lastY,
+					config.tolerance,
+				);
+			} else {
+				resultData = await currentApi.globalRemoval(
+					imageData,
+					config.lastX,
+					config.lastY,
+					config.tolerance,
+				);
+			}
+
+			const resCanvas = document.createElement("canvas");
+			resCanvas.width = resultData.width;
+			resCanvas.height = resultData.height;
+			const resCtx = resCanvas.getContext("2d");
+			resCtx?.putImageData(resultData, 0, 0);
+			resultImageUrl.value = resCanvas.toDataURL("image/png");
+		} catch (err: unknown) {
+			errorMessage.value =
+				err instanceof Error ? err.message : "Processing failed";
+		} finally {
+			isProcessing.value = false;
+		}
+	};
+	img.src = sourceUrl;
 };
 
 let debounceTimeout: number | null = null;
 
 watch(
-  () => config.tolerance,
-  () => {
-    if ((config.mode === "magic" || config.mode === "global") && config.hasSelected) {
-      if (debounceTimeout) clearTimeout(debounceTimeout);
-      debounceTimeout = window.setTimeout(() => {
-        processImage();
-        debounceTimeout = null;
-      }, 150);
-    }
-  },
+	() => config.tolerance,
+	() => {
+		if (
+			(config.mode === "magic" || config.mode === "global") &&
+			config.hasSelected
+		) {
+			if (debounceTimeout) clearTimeout(debounceTimeout);
+			debounceTimeout = window.setTimeout(() => {
+				processImage();
+				debounceTimeout = null;
+			}, 150);
+		}
+	},
 );
 </script>
 

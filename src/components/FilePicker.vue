@@ -1,15 +1,15 @@
 <script setup lang="ts">
 defineProps<{
-  label?: string;
-  accept?: string;
-  multiple?: boolean;
-  disabled?: boolean;
+	label?: string;
+	accept?: string;
+	multiple?: boolean;
+	disabled?: boolean;
 }>();
 
 const emit = defineEmits(["change"]);
 
 const handleChange = (event: Event) => {
-  emit("change", event);
+	emit("change", event);
 };
 </script>
 

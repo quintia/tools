@@ -1,28 +1,28 @@
-import { createUnplugin } from "unplugin";
-import { generateSW } from "workbox-build";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { createUnplugin } from "unplugin";
+import { generateSW } from "workbox-build";
 
 interface PWAOptions {
-  manifest?: any;
-  workbox?: any;
+	manifest?: Record<string, unknown>;
+	workbox?: Record<string, unknown>;
 }
 
 export default createUnplugin((options: PWAOptions = {}) => {
-  let outDir = "dist";
-  const virtualModuleId = "virtual:pwa-register";
-  const resolvedVirtualModuleId = "\0" + virtualModuleId;
+	let outDir = "dist";
+	const virtualModuleId = "virtual:pwa-register";
+	const resolvedVirtualModuleId = `\0${virtualModuleId}`;
 
-  return {
-    name: "custom-pwa",
-    resolveId(id) {
-      if (id === virtualModuleId) {
-        return resolvedVirtualModuleId;
-      }
-    },
-    load(id) {
-      if (id === resolvedVirtualModuleId) {
-        return `export const registerSW = (options = {}) => {
+	return {
+		name: "custom-pwa",
+		resolveId(id) {
+			if (id === virtualModuleId) {
+				return resolvedVirtualModuleId;
+			}
+		},
+		load(id) {
+			if (id === resolvedVirtualModuleId) {
+				return `export const registerSW = (options = {}) => {
           if (!('serviceWorker' in navigator)) return;
           
           const { immediate = false } = options;
@@ -63,44 +63,47 @@ export default createUnplugin((options: PWAOptions = {}) => {
             window.addEventListener('load', register);
           }
         }`;
-      }
-    },
-    vite: {
-      configResolved(config) {
-        outDir = path.resolve(config.root, config.build.outDir);
-      },
-      async closeBundle() {
-        // Only run in production build
-        if (process.env.NODE_ENV === "development") return;
+			}
+		},
+		vite: {
+			configResolved(config) {
+				outDir = path.resolve(config.root, config.build.outDir);
+			},
+			async closeBundle() {
+				// Only run in production build
+				if (process.env.NODE_ENV === "development") return;
 
-        // Ensure outDir exists
-        try {
-          await fs.access(outDir);
-        } catch {
-          return;
-        }
+				// Ensure outDir exists
+				try {
+					await fs.access(outDir);
+				} catch {
+					return;
+				}
 
-        // Write manifest
-        if (options.manifest) {
-          const manifestPath = path.resolve(outDir, "manifest.webmanifest");
-          await fs.writeFile(manifestPath, JSON.stringify(options.manifest, null, 2));
-        }
+				// Write manifest
+				if (options.manifest) {
+					const manifestPath = path.resolve(outDir, "manifest.webmanifest");
+					await fs.writeFile(
+						manifestPath,
+						JSON.stringify(options.manifest, null, 2),
+					);
+				}
 
-        // Generate Service Worker
-        await generateSW({
-          swDest: path.resolve(outDir, "sw.js"),
-          globDirectory: outDir,
-          skipWaiting: true,
-          clientsClaim: true,
-          ...options.workbox,
-        });
-      },
-      transformIndexHtml(html) {
-        return html.replace(
-          "</head>",
-          '  <link rel="manifest" href="/manifest.webmanifest">\n</head>',
-        );
-      },
-    },
-  };
+				// Generate Service Worker
+				await generateSW({
+					swDest: path.resolve(outDir, "sw.js"),
+					globDirectory: outDir,
+					skipWaiting: true,
+					clientsClaim: true,
+					...options.workbox,
+				});
+			},
+			transformIndexHtml(html) {
+				return html.replace(
+					"</head>",
+					'  <link rel="manifest" href="/manifest.webmanifest">\n</head>',
+				);
+			},
+		},
+	};
 });

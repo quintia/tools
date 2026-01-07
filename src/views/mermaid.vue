@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { ref, watch, onWatcherCleanup } from "vue";
 import mermaid from "mermaid";
-import ToolHeader from "../components/ToolHeader.vue";
-import ToolCard from "../components/ToolCard.vue";
+import { onWatcherCleanup, ref, watch } from "vue";
 import DownloadLink from "../components/DownloadLink.vue";
-import MonospaceEditor from "../components/MonospaceEditor.vue";
 import LoadingOverlay from "../components/LoadingOverlay.vue";
+import MonospaceEditor from "../components/MonospaceEditor.vue";
+import ToolCard from "../components/ToolCard.vue";
+import ToolHeader from "../components/ToolHeader.vue";
 
 mermaid.initialize({
-  startOnLoad: false,
-  theme: "default",
-  securityLevel: "loose",
-  fontFamily: '"Noto Sans JP", "Helvetica Neue", Arial, sans-serif',
+	startOnLoad: false,
+	theme: "default",
+	securityLevel: "loose",
+	fontFamily: '"Noto Sans JP", "Helvetica Neue", Arial, sans-serif',
 });
 
 const DEFAULT_CODE = `graph TD
@@ -26,46 +26,46 @@ const DEFAULT_CODE = `graph TD
     style H fill:#bbf,stroke:#333,stroke-width:2px`;
 
 async function convertSvgToPng(svgString: string, scale = 2) {
-  const parser = new DOMParser();
-  const svgDoc = parser.parseFromString(svgString, "image/svg+xml");
-  const svgElement = svgDoc.documentElement;
+	const parser = new DOMParser();
+	const svgDoc = parser.parseFromString(svgString, "image/svg+xml");
+	const svgElement = svgDoc.documentElement;
 
-  const widthAttr = svgElement.getAttribute("width");
-  const heightAttr = svgElement.getAttribute("height");
-  let width = widthAttr ? parseFloat(widthAttr) : 0;
-  let height = heightAttr ? parseFloat(heightAttr) : 0;
+	const widthAttr = svgElement.getAttribute("width");
+	const heightAttr = svgElement.getAttribute("height");
+	let width = widthAttr ? parseFloat(widthAttr) : 0;
+	let height = heightAttr ? parseFloat(heightAttr) : 0;
 
-  if (!width || !height) {
-    const viewBox = svgElement.getAttribute("viewBox");
-    if (viewBox) {
-      const [, , vbWidth, vbHeight] = viewBox.split(/\s+|,/).map(parseFloat);
-      width = vbWidth;
-      height = vbHeight;
-    }
-  }
+	if (!width || !height) {
+		const viewBox = svgElement.getAttribute("viewBox");
+		if (viewBox) {
+			const [, , vbWidth, vbHeight] = viewBox.split(/\s+|,/).map(parseFloat);
+			width = vbWidth;
+			height = vbHeight;
+		}
+	}
 
-  width = width || 800;
-  height = height || 600;
+	width = width || 800;
+	height = height || 600;
 
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.ceil(width * scale);
-  canvas.height = Math.ceil(height * scale);
+	const canvas = document.createElement("canvas");
+	canvas.width = Math.ceil(width * scale);
+	canvas.height = Math.ceil(height * scale);
 
-  const img = new Image();
-  const base64Svg = btoa(unescape(encodeURIComponent(svgString)));
+	const img = new Image();
+	const base64Svg = btoa(unescape(encodeURIComponent(svgString)));
 
-  await new Promise((resolve, reject) => {
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = `data:image/svg+xml;base64,${base64Svg}`;
-  });
+	await new Promise((resolve, reject) => {
+		img.onload = () => resolve(img);
+		img.onerror = reject;
+		img.src = `data:image/svg+xml;base64,${base64Svg}`;
+	});
 
-  const ctx = canvas.getContext("2d");
-  if (ctx) {
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-  }
+	const ctx = canvas.getContext("2d");
+	if (ctx) {
+		ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+	}
 
-  return canvas.toDataURL("image/png");
+	return canvas.toDataURL("image/png");
 }
 
 const code = ref(DEFAULT_CODE);
@@ -75,58 +75,59 @@ const isRendering = ref(false);
 let lastRenderId = 0;
 
 const renderDiagram = async (mermaidCode: string) => {
-  const currentRenderId = ++lastRenderId;
+	const currentRenderId = ++lastRenderId;
 
-  if (!mermaidCode.trim()) {
-    imageUrl.value = "";
-    error.value = "";
-    isRendering.value = false;
-    return;
-  }
+	if (!mermaidCode.trim()) {
+		imageUrl.value = "";
+		error.value = "";
+		isRendering.value = false;
+		return;
+	}
 
-  isRendering.value = true;
+	isRendering.value = true;
 
-  try {
-    await mermaid.parse(mermaidCode, { suppressErrors: false });
+	try {
+		await mermaid.parse(mermaidCode, { suppressErrors: false });
 
-    const id = `mermaid-${Date.now()}`;
-    const { svg } = await mermaid.render(id, mermaidCode);
+		const id = `mermaid-${Date.now()}`;
+		const { svg } = await mermaid.render(id, mermaidCode);
 
-    if (currentRenderId !== lastRenderId) return;
+		if (currentRenderId !== lastRenderId) return;
 
-    const pngUrl = await convertSvgToPng(svg);
+		const pngUrl = await convertSvgToPng(svg);
 
-    if (currentRenderId !== lastRenderId) return;
+		if (currentRenderId !== lastRenderId) return;
 
-    imageUrl.value = pngUrl;
-    error.value = "";
-  } catch (err) {
-    if (currentRenderId !== lastRenderId) return;
-    console.error("Mermaid Render Error:", err);
-    const message = err instanceof Error ? err.message : "Invalid Mermaid syntax";
-    error.value = message;
-    imageUrl.value = "";
-  } finally {
-    if (currentRenderId === lastRenderId) {
-      isRendering.value = false;
-    }
-  }
+		imageUrl.value = pngUrl;
+		error.value = "";
+	} catch (err) {
+		if (currentRenderId !== lastRenderId) return;
+		console.error("Mermaid Render Error:", err);
+		const message =
+			err instanceof Error ? err.message : "Invalid Mermaid syntax";
+		error.value = message;
+		imageUrl.value = "";
+	} finally {
+		if (currentRenderId === lastRenderId) {
+			isRendering.value = false;
+		}
+	}
 };
 
 watch(
-  code,
-  (newCode, oldCode) => {
-    if (oldCode === undefined) {
-      renderDiagram(newCode);
-      return;
-    }
+	code,
+	(newCode, oldCode) => {
+		if (oldCode === undefined) {
+			renderDiagram(newCode);
+			return;
+		}
 
-    const timer = setTimeout(() => {
-      renderDiagram(newCode);
-    }, 500);
-    onWatcherCleanup(() => clearTimeout(timer));
-  },
-  { immediate: true },
+		const timer = setTimeout(() => {
+			renderDiagram(newCode);
+		}, 500);
+		onWatcherCleanup(() => clearTimeout(timer));
+	},
+	{ immediate: true },
 );
 </script>
 

@@ -1,109 +1,114 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import ToolHeader from "../components/ToolHeader.vue";
-import ToolCard from "../components/ToolCard.vue";
 import MonospaceEditor from "../components/MonospaceEditor.vue";
+import ToolCard from "../components/ToolCard.vue";
+import ToolHeader from "../components/ToolHeader.vue";
 
 function round(num: number) {
-  for (let i = 0; i < 256; i++) {
-    if (Math.floor(num * 10 ** i) !== 0) {
-      return Math.floor(num * 10 ** (i + 2)) / 10 ** (i + 2);
-    }
-  }
-  return num;
+	for (let i = 0; i < 256; i++) {
+		if (Math.floor(num * 10 ** i) !== 0) {
+			return Math.floor(num * 10 ** (i + 2)) / 10 ** (i + 2);
+		}
+	}
+	return num;
 }
 
 function mean(nums: number[]) {
-  if (nums.length === 0) return Number.NaN;
-  return nums.reduce((p, c) => p + c, 0) / nums.length;
+	if (nums.length === 0) return Number.NaN;
+	return nums.reduce((p, c) => p + c, 0) / nums.length;
 }
 
 function variance(nums: number[]) {
-  if (nums.length === 0) return Number.NaN;
-  const mu = mean(nums);
-  return nums.reduce((p, c) => p + (c - mu) ** 2, 0) / nums.length;
+	if (nums.length === 0) return Number.NaN;
+	const mu = mean(nums);
+	return nums.reduce((p, c) => p + (c - mu) ** 2, 0) / nums.length;
 }
 
 function standardDeviation(nums: number[]) {
-  if (nums.length === 0) return Number.NaN;
-  return Math.sqrt(variance(nums));
+	if (nums.length === 0) return Number.NaN;
+	return Math.sqrt(variance(nums));
 }
 
 function maxVal(nums: number[]) {
-  if (nums.length === 0) return Number.NaN;
-  return Math.max(...nums);
+	if (nums.length === 0) return Number.NaN;
+	return Math.max(...nums);
 }
 
 function minVal(nums: number[]) {
-  if (nums.length === 0) return Number.NaN;
-  return Math.min(...nums);
+	if (nums.length === 0) return Number.NaN;
+	return Math.min(...nums);
 }
 
 function modes(nums: number[]) {
-  if (nums.length === 0) return [];
-  const counts: Record<number, number> = {};
-  let maxFreq = 0;
-  for (const num of nums) {
-    counts[num] = (counts[num] ?? 0) + 1;
-    if (counts[num] > maxFreq) maxFreq = counts[num];
-  }
-  const modesValue: string[] = [];
-  for (const num in counts) {
-    if (counts[num] === maxFreq) modesValue.push(num);
-  }
-  return modesValue;
+	if (nums.length === 0) return [];
+	const counts: Record<number, number> = {};
+	let maxFreq = 0;
+	for (const num of nums) {
+		counts[num] = (counts[num] ?? 0) + 1;
+		if (counts[num] > maxFreq) maxFreq = counts[num];
+	}
+	const modesValue: string[] = [];
+	for (const num in counts) {
+		if (counts[num] === maxFreq) modesValue.push(num);
+	}
+	return modesValue;
 }
 
 function median(nums: number[]) {
-  if (nums.length === 0) return Number.NaN;
-  const sorted = [...nums].sort((a, b) => a - b);
-  if (sorted.length % 2 === 1) return sorted[Math.floor(sorted.length / 2)];
-  const mid = sorted.length / 2;
-  return (sorted[mid - 1] + sorted[mid]) / 2;
+	if (nums.length === 0) return Number.NaN;
+	const sorted = [...nums].sort((a, b) => a - b);
+	if (sorted.length % 2 === 1) return sorted[Math.floor(sorted.length / 2)];
+	const mid = sorted.length / 2;
+	return (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
 function firstQuartile(nums: number[]) {
-  if (nums.length === 0) return Number.NaN;
-  const sorted = [...nums].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return median(sorted.slice(0, mid));
+	if (nums.length === 0) return Number.NaN;
+	const sorted = [...nums].sort((a, b) => a - b);
+	const mid = Math.floor(sorted.length / 2);
+	return median(sorted.slice(0, mid));
 }
 
 function thirdQuartile(nums: number[]) {
-  if (nums.length === 0) return Number.NaN;
-  const sorted = [...nums].sort((a, b) => a - b);
-  const mid = Math.ceil(sorted.length / 2);
-  return median(sorted.slice(mid));
+	if (nums.length === 0) return Number.NaN;
+	const sorted = [...nums].sort((a, b) => a - b);
+	const mid = Math.ceil(sorted.length / 2);
+	return median(sorted.slice(mid));
 }
 
 function hist(nums: number[]) {
-  if (nums.length === 0) return {};
-  const counts: Record<number, number> = {};
-  for (const num of nums) {
-    counts[num] = (counts[num] ?? 0) + 1;
-  }
-  return counts;
+	if (nums.length === 0) return {};
+	const counts: Record<number, number> = {};
+	for (const num of nums) {
+		counts[num] = (counts[num] ?? 0) + 1;
+	}
+	return counts;
 }
 
 function split(value: string) {
-  return value
-    .split(/[^0-9.+-]+/)
-    .filter((x) => x !== "")
-    .map(Number)
-    .filter((x) => !Number.isNaN(x));
+	return value
+		.split(/[^0-9.+-]+/)
+		.filter((x) => x !== "")
+		.map(Number)
+		.filter((x) => !Number.isNaN(x));
 }
 
-const input = ref("10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 10, 20, 30, 55, 66, 77, 88");
+const input = ref(
+	"10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 10, 20, 30, 55, 66, 77, 88",
+);
 
 const values = computed(() => split(input.value));
 const histogram = computed(() => hist(values.value));
 const chartData = computed(() => {
-  const keys = Object.keys(histogram.value)
-    .map(Number)
-    .sort((a, b) => a - b);
-  const data = keys.map((k) => ({ label: k.toString(), value: histogram.value[k] }));
-  const maxV = Math.max(...data.map((d) => d.value), 0);
-  return { data, maxVal: maxV };
+	const keys = Object.keys(histogram.value)
+		.map(Number)
+		.sort((a, b) => a - b);
+	const data = keys.map((k) => ({
+		label: k.toString(),
+		value: histogram.value[k],
+	}));
+	const maxV = Math.max(...data.map((d) => d.value), 0);
+	return { data, maxVal: maxV };
 });
 </script>
 

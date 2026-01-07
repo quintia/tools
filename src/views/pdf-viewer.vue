@@ -1,25 +1,25 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import PdfViewer from "../components/PdfViewer.vue";
-import ToolHeader from "../components/ToolHeader.vue";
-import ToolCard from "../components/ToolCard.vue";
 import FilePicker from "../components/FilePicker.vue";
+import PdfViewer from "../components/PdfViewer.vue";
+import ToolCard from "../components/ToolCard.vue";
+import ToolHeader from "../components/ToolHeader.vue";
 
 const fileData = ref<Uint8Array | null>(null);
 const fileName = ref<string | null>(null);
 
 const handleFileChange = (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  const file = target.files?.[0];
-  if (file && file.type === "application/pdf") {
-    fileName.value = file.name;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const arrayBuffer = e.target?.result as ArrayBuffer;
-      fileData.value = new Uint8Array(arrayBuffer);
-    };
-    reader.readAsArrayBuffer(file);
-  }
+	const target = event.target as HTMLInputElement;
+	const file = target.files?.[0];
+	if (file && file.type === "application/pdf") {
+		fileName.value = file.name;
+		const reader = new FileReader();
+		reader.onload = (e) => {
+			const arrayBuffer = e.target?.result as ArrayBuffer;
+			fileData.value = new Uint8Array(arrayBuffer);
+		};
+		reader.readAsArrayBuffer(file);
+	}
 };
 </script>
 

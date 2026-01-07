@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
 import * as Comlink from "comlink";
-import type { MupdfWorker } from "../workers/mupdf-worker";
-import PdfViewer from "../components/PdfViewer.vue";
-import ToolHeader from "../components/ToolHeader.vue";
-import ToolCard from "../components/ToolCard.vue";
+import { onMounted, onUnmounted, ref } from "vue";
 import DownloadLink from "../components/DownloadLink.vue";
 import FilePicker from "../components/FilePicker.vue";
+import PdfViewer from "../components/PdfViewer.vue";
+import ToolCard from "../components/ToolCard.vue";
+import ToolHeader from "../components/ToolHeader.vue";
+import type { MupdfWorker } from "../workers/mupdf-worker";
 
 const fileData = ref<Uint8Array | null>(null);
 const fileName = ref<string | null>(null);
@@ -17,70 +17,72 @@ const targetFormat = ref("A4");
 const orientation = ref("portrait");
 
 const formats: Record<string, [number, number]> = {
-  A0: [2383.94, 3370.39],
-  A1: [1683.78, 2383.94],
-  A2: [1190.55, 1683.78],
-  A3: [841.89, 1190.55],
-  A4: [595.27, 841.89],
-  A5: [419.53, 595.27],
-  A6: [297.64, 419.53],
-  B0: [2834.65, 4008.19],
-  B1: [2004.09, 2834.65],
-  B2: [1417.32, 2004.09],
-  B3: [1000.63, 1417.32],
-  B4: [708.66, 1000.63],
-  B5: [498.9, 708.66],
-  B6: [354.33, 498.9],
-  Letter: [612, 792],
-  Legal: [612, 1008],
+	A0: [2383.94, 3370.39],
+	A1: [1683.78, 2383.94],
+	A2: [1190.55, 1683.78],
+	A3: [841.89, 1190.55],
+	A4: [595.27, 841.89],
+	A5: [419.53, 595.27],
+	A6: [297.64, 419.53],
+	B0: [2834.65, 4008.19],
+	B1: [2004.09, 2834.65],
+	B2: [1417.32, 2004.09],
+	B3: [1000.63, 1417.32],
+	B4: [708.66, 1000.63],
+	B5: [498.9, 708.66],
+	B6: [354.33, 498.9],
+	Letter: [612, 792],
+	Legal: [612, 1008],
 };
 
 let worker: Worker | null = null;
 let api: Comlink.Remote<MupdfWorker> | null = null;
 
 onMounted(() => {
-  worker = new Worker(new URL("../workers/mupdf-worker.ts", import.meta.url), { type: "module" });
-  api = Comlink.wrap<MupdfWorker>(worker);
+	worker = new Worker(new URL("../workers/mupdf-worker.ts", import.meta.url), {
+		type: "module",
+	});
+	api = Comlink.wrap<MupdfWorker>(worker);
 });
 
 onUnmounted(() => {
-  worker?.terminate();
+	worker?.terminate();
 });
 
 const handleFileChange = (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  const file = target.files?.[0];
-  if (file && file.type === "application/pdf") {
-    fileName.value = file.name;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const arrayBuffer = e.target?.result as ArrayBuffer;
-      fileData.value = new Uint8Array(arrayBuffer);
-      downloadUrl.value = null;
-    };
-    reader.readAsArrayBuffer(file);
-  }
+	const target = event.target as HTMLInputElement;
+	const file = target.files?.[0];
+	if (file && file.type === "application/pdf") {
+		fileName.value = file.name;
+		const reader = new FileReader();
+		reader.onload = (e) => {
+			const arrayBuffer = e.target?.result as ArrayBuffer;
+			fileData.value = new Uint8Array(arrayBuffer);
+			downloadUrl.value = null;
+		};
+		reader.readAsArrayBuffer(file);
+	}
 };
 
 const resizePdf = async () => {
-  if (!fileData.value || !api) return;
+	if (!fileData.value || !api) return;
 
-  isProcessing.value = true;
-  try {
-    let [tw, th] = formats[targetFormat.value];
-    if (orientation.value === "landscape") {
-      [tw, th] = [th, tw];
-    }
+	isProcessing.value = true;
+	try {
+		let [tw, th] = formats[targetFormat.value];
+		if (orientation.value === "landscape") {
+			[tw, th] = [th, tw];
+		}
 
-    const result = await api.resizePdf(fileData.value, tw, th);
-    const blob = new Blob([result as any], { type: "application/pdf" });
-    downloadUrl.value = URL.createObjectURL(blob);
-  } catch (error) {
-    console.error("PDF Resize Error:", error);
-    alert("An error occurred during resizing.");
-  } finally {
-    isProcessing.value = false;
-  }
+		const result = await api.resizePdf(fileData.value, tw, th);
+		const blob = new Blob([result as BlobPart], { type: "application/pdf" });
+		downloadUrl.value = URL.createObjectURL(blob);
+	} catch (error) {
+		console.error("PDF Resize Error:", error);
+		alert("An error occurred during resizing.");
+	} finally {
+		isProcessing.value = false;
+	}
 };
 </script>
 

@@ -108,46 +108,47 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { toPng } from "html-to-image";
-import LoadingOverlay from "../components/LoadingOverlay.vue";
 import {
-  BundledLanguage,
-  BundledTheme,
-  bundledLanguages,
-  bundledLanguagesInfo,
-  bundledThemes,
-  bundledThemesInfo,
-  codeToHtml,
+	type BundledLanguage,
+	type BundledTheme,
+	bundledLanguages,
+	bundledLanguagesInfo,
+	bundledThemes,
+	bundledThemesInfo,
+	codeToHtml,
 } from "shiki";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
+import LoadingOverlay from "../components/LoadingOverlay.vue";
 
 type LanguageOption = {
-  value: BundledLanguage;
-  label: string;
+	value: BundledLanguage;
+	label: string;
 };
 
 type ThemeOption = {
-  value: BundledTheme;
-  label: string;
+	value: BundledTheme;
+	label: string;
 };
 
 const languages = computed<LanguageOption[]>(() =>
-  bundledLanguagesInfo
-    .map((lang) => ({ value: lang.id as BundledLanguage, label: lang.name }))
-    .sort((a, b) => a.label.localeCompare(b.label)),
+	bundledLanguagesInfo
+		.map((lang) => ({ value: lang.id as BundledLanguage, label: lang.name }))
+		.sort((a, b) => a.label.localeCompare(b.label)),
 );
 
 const themes = computed<ThemeOption[]>(() =>
-  bundledThemesInfo
-    .map((themeInfo) => ({ value: themeInfo.id as BundledTheme, label: themeInfo.displayName }))
-    .sort((a, b) => a.label.localeCompare(b.label)),
+	bundledThemesInfo
+		.map((themeInfo) => ({
+			value: themeInfo.id as BundledTheme,
+			label: themeInfo.displayName,
+		}))
+		.sort((a, b) => a.label.localeCompare(b.label)),
 );
 
 const code = ref(
-  `function greet(name: string) {
-  return ` +
-    "`Hello, ${name}!`" +
-    `;
+	`function greet(name: string) {
+  return \`Hello, \${name}!\`;
 }
 
 greet("Taniguchi");`,
@@ -164,71 +165,74 @@ const previewImage = ref("");
 let renderTimeout: number | undefined;
 
 const wrapperStyle = computed(() => ({
-  fontSize: `${fontSize.value}px`,
+	fontSize: `${fontSize.value}px`,
 }));
 
 const generatePng = async () => {
-  if (!renderRef.value) {
-    throw new Error("Preview target is unavailable.");
-  }
+	if (!renderRef.value) {
+		throw new Error("Preview target is unavailable.");
+	}
 
-  return toPng(renderRef.value, {
-    pixelRatio: 2,
-    cacheBust: true,
-    skipFonts: true,
-  });
+	return toPng(renderRef.value, {
+		pixelRatio: 2,
+		cacheBust: true,
+		skipFonts: true,
+	});
 };
 
 const renderHighlight = async () => {
-  error.value = "";
-  isRendering.value = true;
-  try {
-    highlightedHtml.value = await codeToHtml(code.value, {
-      lang: language.value,
-      theme: theme.value,
-    });
+	error.value = "";
+	isRendering.value = true;
+	try {
+		highlightedHtml.value = await codeToHtml(code.value, {
+			lang: language.value,
+			theme: theme.value,
+		});
 
-    await nextTick();
-    previewImage.value = await generatePng();
-  } catch (renderError) {
-    error.value = renderError instanceof Error ? renderError.message : "Failed to render code.";
-    previewImage.value = "";
-  } finally {
-    isRendering.value = false;
-  }
+		await nextTick();
+		previewImage.value = await generatePng();
+	} catch (renderError) {
+		error.value =
+			renderError instanceof Error
+				? renderError.message
+				: "Failed to render code.";
+		previewImage.value = "";
+	} finally {
+		isRendering.value = false;
+	}
 };
 
 const scheduleRender = () => {
-  if (renderTimeout) {
-    window.clearTimeout(renderTimeout);
-  }
+	if (renderTimeout) {
+		window.clearTimeout(renderTimeout);
+	}
 
-  renderTimeout = window.setTimeout(renderHighlight, 200);
+	renderTimeout = window.setTimeout(renderHighlight, 200);
 };
 
 watch([code, language, theme, fontSize], scheduleRender, { immediate: true });
 
 onMounted(() => {
-  renderHighlight();
+	renderHighlight();
 });
 
 const downloadPng = async () => {
-  isDownloading.value = true;
-  error.value = "";
-  try {
-    const dataUrl = previewImage.value || (await generatePng());
-    const link = document.createElement("a");
-    link.href = dataUrl;
-    link.download = `code-highlight-${language.value}.png`;
-    link.click();
-  } catch (downloadError) {
-    error.value =
-      downloadError instanceof Error
-        ? downloadError.message
-        : "Unable to generate PNG from the preview.";
-  } finally {
-    isDownloading.value = false;
-  }
+	isDownloading.value = true;
+	error.value = "";
+	try {
+		const dataUrl = previewImage.value || (await generatePng());
+		const link = document.createElement("a");
+		link.href = dataUrl;
+		link.download = `code-highlight-${language.value}.png`;
+		link.click();
+	} catch (downloadError) {
+		error.value =
+			downloadError instanceof Error
+				? downloadError.message
+				: "Unable to generate PNG from the preview.";
+	} finally {
+		isDownloading.value = false;
+	}
 };
 </script>
 

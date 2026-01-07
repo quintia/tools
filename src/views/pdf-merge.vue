@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
 import * as Comlink from "comlink";
-import type { MupdfWorker } from "../workers/mupdf-worker";
-import PdfViewer from "../components/PdfViewer.vue";
-import ToolHeader from "../components/ToolHeader.vue";
-import ToolCard from "../components/ToolCard.vue";
-import FilePicker from "../components/FilePicker.vue";
+import { onMounted, onUnmounted, ref } from "vue";
 import DownloadLink from "../components/DownloadLink.vue";
+import FilePicker from "../components/FilePicker.vue";
+import PdfViewer from "../components/PdfViewer.vue";
+import ToolCard from "../components/ToolCard.vue";
+import ToolHeader from "../components/ToolHeader.vue";
+import type { MupdfWorker } from "../workers/mupdf-worker";
 
 interface FileItem {
-  id: string;
-  name: string;
-  data: Uint8Array;
-  showPreview: boolean;
+	id: string;
+	name: string;
+	data: Uint8Array;
+	showPreview: boolean;
 }
 
 const files = ref<FileItem[]>([]);
@@ -23,71 +23,73 @@ let worker: Worker | null = null;
 let api: Comlink.Remote<MupdfWorker> | null = null;
 
 onMounted(() => {
-  worker = new Worker(new URL("../workers/mupdf-worker.ts", import.meta.url), { type: "module" });
-  api = Comlink.wrap<MupdfWorker>(worker);
+	worker = new Worker(new URL("../workers/mupdf-worker.ts", import.meta.url), {
+		type: "module",
+	});
+	api = Comlink.wrap<MupdfWorker>(worker);
 });
 
 onUnmounted(() => {
-  worker?.terminate();
+	worker?.terminate();
 });
 
 const handleFileChange = async (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  const selectedFiles = target.files;
-  if (!selectedFiles) return;
+	const target = event.target as HTMLInputElement;
+	const selectedFiles = target.files;
+	if (!selectedFiles) return;
 
-  for (let i = 0; i < selectedFiles.length; i++) {
-    const file = selectedFiles[i];
-    if (file.type !== "application/pdf") continue;
+	for (let i = 0; i < selectedFiles.length; i++) {
+		const file = selectedFiles[i];
+		if (file.type !== "application/pdf") continue;
 
-    const arrayBuffer = await file.arrayBuffer();
-    files.value.push({
-      id: Math.random().toString(36).substr(2, 9),
-      name: file.name,
-      data: new Uint8Array(arrayBuffer),
-      showPreview: false,
-    });
-  }
-  // Reset input
-  target.value = "";
-  downloadUrl.value = null;
+		const arrayBuffer = await file.arrayBuffer();
+		files.value.push({
+			id: Math.random().toString(36).substr(2, 9),
+			name: file.name,
+			data: new Uint8Array(arrayBuffer),
+			showPreview: false,
+		});
+	}
+	// Reset input
+	target.value = "";
+	downloadUrl.value = null;
 };
 
 const removeFile = (id: string) => {
-  files.value = files.value.filter((f) => f.id !== id);
-  downloadUrl.value = null;
+	files.value = files.value.filter((f) => f.id !== id);
+	downloadUrl.value = null;
 };
 
 const togglePreview = (id: string) => {
-  const file = files.value.find((f) => f.id === id);
-  if (file) {
-    file.showPreview = !file.showPreview;
-  }
+	const file = files.value.find((f) => f.id === id);
+	if (file) {
+		file.showPreview = !file.showPreview;
+	}
 };
 
 const moveFile = (index: number, direction: number) => {
-  const newIndex = index + direction;
-  if (newIndex < 0 || newIndex >= files.value.length) return;
-  const temp = files.value[index];
-  files.value[index] = files.value[newIndex];
-  files.value[newIndex] = temp;
-  downloadUrl.value = null;
+	const newIndex = index + direction;
+	if (newIndex < 0 || newIndex >= files.value.length) return;
+	const temp = files.value[index];
+	files.value[index] = files.value[newIndex];
+	files.value[newIndex] = temp;
+	downloadUrl.value = null;
 };
 
 const mergePdfs = async () => {
-  if (files.value.length < 2 || !api) return;
+	if (files.value.length < 2 || !api) return;
 
-  isProcessing.value = true;
-  try {
-    const result = await api.mergePdfs(files.value.map((f) => f.data));
-    const blob = new Blob([result as any], { type: "application/pdf" });
-    downloadUrl.value = URL.createObjectURL(blob);
-  } catch (error) {
-    console.error("PDF Merge Error:", error);
-    alert("An error occurred while merging PDFs.");
-  } finally {
-    isProcessing.value = false;
-  }
+	isProcessing.value = true;
+	try {
+		const result = await api.mergePdfs(files.value.map((f) => f.data));
+		const blob = new Blob([result as BlobPart], { type: "application/pdf" });
+		downloadUrl.value = URL.createObjectURL(blob);
+	} catch (error) {
+		console.error("PDF Merge Error:", error);
+		alert("An error occurred while merging PDFs.");
+	} finally {
+		isProcessing.value = false;
+	}
 };
 </script>
 

@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from "vue";
 import * as Comlink from "comlink";
+import { onMounted, onUnmounted, ref, watch } from "vue";
 import type { MupdfWorker } from "../workers/mupdf-worker";
 import LoadingOverlay from "./LoadingOverlay.vue";
 
 const props = defineProps<{
-  data: Uint8Array | null;
+	data: Uint8Array | null;
 }>();
 
 const pages = ref<string[]>([]);
@@ -16,51 +16,53 @@ let worker: Worker | null = null;
 let api: Comlink.Remote<MupdfWorker> | null = null;
 
 onMounted(() => {
-  worker = new Worker(new URL("../workers/mupdf-worker.ts", import.meta.url), { type: "module" });
-  api = Comlink.wrap<MupdfWorker>(worker);
-  if (props.data) renderPdf();
+	worker = new Worker(new URL("../workers/mupdf-worker.ts", import.meta.url), {
+		type: "module",
+	});
+	api = Comlink.wrap<MupdfWorker>(worker);
+	if (props.data) renderPdf();
 });
 
 onUnmounted(() => {
-  worker?.terminate();
+	worker?.terminate();
 });
 
 const renderPdf = async () => {
-  if (!props.data || !api) {
-    pages.value = [];
-    return;
-  }
+	if (!props.data || !api) {
+		pages.value = [];
+		return;
+	}
 
-  isRendering.value = true;
-  error.value = null;
-  pages.value = [];
+	isRendering.value = true;
+	error.value = null;
+	pages.value = [];
 
-  try {
-    // We use a scale of 1.5 for a balance between performance and readability
-    const thumbs = await api.renderThumbnails(props.data, 1.5);
-    const renderedPages: string[] = [];
+	try {
+		// We use a scale of 1.5 for a balance between performance and readability
+		const thumbs = await api.renderThumbnails(props.data, 1.5);
+		const renderedPages: string[] = [];
 
-    for (const thumb of thumbs) {
-      const canvas = document.createElement("canvas");
-      canvas.width = thumb.width;
-      canvas.height = thumb.height;
-      const ctx = canvas.getContext("2d");
+		for (const thumb of thumbs) {
+			const canvas = document.createElement("canvas");
+			canvas.width = thumb.width;
+			canvas.height = thumb.height;
+			const ctx = canvas.getContext("2d");
 
-      if (ctx) {
-        const samples = new Uint8ClampedArray(thumb.pixels);
-        const imageData = new ImageData(samples, thumb.width, thumb.height);
-        ctx.putImageData(imageData, 0, 0);
-        renderedPages.push(canvas.toDataURL());
-      }
-    }
+			if (ctx) {
+				const samples = new Uint8ClampedArray(thumb.pixels);
+				const imageData = new ImageData(samples, thumb.width, thumb.height);
+				ctx.putImageData(imageData, 0, 0);
+				renderedPages.push(canvas.toDataURL());
+			}
+		}
 
-    pages.value = renderedPages;
-  } catch (err) {
-    console.error("PDF Rendering Error:", err);
-    error.value = "Failed to render PDF document.";
-  } finally {
-    isRendering.value = false;
-  }
+		pages.value = renderedPages;
+	} catch (err) {
+		console.error("PDF Rendering Error:", err);
+		error.value = "Failed to render PDF document.";
+	} finally {
+		isRendering.value = false;
+	}
 };
 
 watch(() => props.data, renderPdf);

@@ -1,22 +1,22 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import jsonRaw from "../assets/unicode_latex_unicodemath.json";
-import ToolHeader from "../components/ToolHeader.vue";
-import ToolCard from "../components/ToolCard.vue";
-import MonospaceEditor from "../components/MonospaceEditor.vue";
 import CopyButton from "../components/CopyButton.vue";
+import MonospaceEditor from "../components/MonospaceEditor.vue";
+import ToolCard from "../components/ToolCard.vue";
+import ToolHeader from "../components/ToolHeader.vue";
 
 const json = jsonRaw as [string, string, string][];
 const input = ref("∀x ∈ ℝ, ∃y : x + y = 0\nα + β = γ\n∑ i = n(n+1)/2");
 
 function replace(value: string) {
-  let val = value;
-  for (const [, char, latex] of json) {
-    if (char !== "" && char.charCodeAt(0) > 127 && latex.length > 2) {
-      val = val.replaceAll(char, `$${latex}$`);
-    }
-  }
-  return val.replaceAll(/\$\$\$/g, "$");
+	let val = value;
+	for (const [, char, latex] of json) {
+		if (char !== "" && char.charCodeAt(0) > 127 && latex.length > 2) {
+			val = val.replaceAll(char, `$${latex}$`);
+		}
+	}
+	return val.replaceAll(/\$\$\$/g, "$");
 }
 
 const output = computed(() => replace(input.value));

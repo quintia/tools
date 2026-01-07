@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
-import ToolHeader from "../components/ToolHeader.vue";
-import ToolCard from "../components/ToolCard.vue";
+import { computed, ref } from "vue";
 import CopyButton from "../components/CopyButton.vue";
 import MonospaceEditor from "../components/MonospaceEditor.vue";
+import ToolCard from "../components/ToolCard.vue";
+import ToolHeader from "../components/ToolHeader.vue";
 
-const inputText = ref(`John bought 3 apples for 30 cents with 100 cents. How much is the change?
+const inputText =
+	ref(`John bought 3 apples for 30 cents with 100 cents. How much is the change?
 Jane bought 1 candy for 5 cents with 50 cents. How much is the change?
 Bob bought 2 loaves of bread for 128 cents with 1000 cents. How much is the change?
 Alice bought 1 game for 2980 cents with 10000 cents. How much is the change?
@@ -18,83 +19,89 @@ Sakura bought 1 car for 500000 cents with 1000000 cents. How much is the change?
 const showSteps = ref(false);
 const diffChar = ref("#");
 
-const lineCount = computed(() => inputText.value.split(/\n/).filter((line) => line.trim()).length);
+const lineCount = computed(
+	() => inputText.value.split(/\n/).filter((line) => line.trim()).length,
+);
 
 const limitDiffChar = () => {
-  if (diffChar.value.length > 1) {
-    diffChar.value = diffChar.value.substring(0, 1);
-  }
+	if (diffChar.value.length > 1) {
+		diffChar.value = diffChar.value.substring(0, 1);
+	}
 };
 
 const computeLCSDiff = (str1: string, str2: string) => {
-  const m = str1.length;
-  const n = str2.length;
-  const dp = Array(m + 1)
-    .fill(null)
-    .map(() => Array(n + 1).fill(0));
+	const m = str1.length;
+	const n = str2.length;
+	const dp = Array(m + 1)
+		.fill(null)
+		.map(() => Array(n + 1).fill(0));
 
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (str1[i - 1] === str2[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
-    }
-  }
+	for (let i = 1; i <= m; i++) {
+		for (let j = 1; j <= n; j++) {
+			if (str1[i - 1] === str2[j - 1]) {
+				dp[i][j] = dp[i - 1][j - 1] + 1;
+			} else {
+				dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+			}
+		}
+	}
 
-  let i = m;
-  let j = n;
-  let merged = "";
+	let i = m;
+	let j = n;
+	let merged = "";
 
-  while (i > 0 || j > 0) {
-    if (i > 0 && j > 0 && str1[i - 1] === str2[j - 1]) {
-      merged = str1[i - 1] + merged;
-      i--;
-      j--;
-    } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
-      merged = diffChar.value + merged;
-      j--;
-    } else {
-      merged = diffChar.value + merged;
-      i--;
-    }
-  }
+	while (i > 0 || j > 0) {
+		if (i > 0 && j > 0 && str1[i - 1] === str2[j - 1]) {
+			merged = str1[i - 1] + merged;
+			i--;
+			j--;
+		} else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+			merged = diffChar.value + merged;
+			j--;
+		} else {
+			merged = diffChar.value + merged;
+			i--;
+		}
+	}
 
-  const escapedDiffChar = diffChar.value.replace(/[.*+?^${}()|[\\]/g, "\\$&");
-  const regex = new RegExp(`${escapedDiffChar}+`, "g");
-  return merged.replace(regex, diffChar.value);
+	const escapedDiffChar = diffChar.value.replace(/[.*+?^${}()|[\\]/g, "\\$&");
+	const regex = new RegExp(`${escapedDiffChar}+`, "g");
+	return merged.replace(regex, diffChar.value);
 };
 
 const processedData = computed(() => {
-  const lines = inputText.value.split(/\r\n|\r|\n/).filter((line) => line.trim());
+	const lines = inputText.value
+		.split(/\r\n|\r|\n/)
+		.filter((line) => line.trim());
 
-  if (lines.length === 0) return { finalResult: "", regexResult: "", steps: [] };
-  if (lines.length === 1) return { finalResult: lines[0], regexResult: lines[0], steps: [] };
+	if (lines.length === 0)
+		return { finalResult: "", regexResult: "", steps: [] };
+	if (lines.length === 1)
+		return { finalResult: lines[0], regexResult: lines[0], steps: [] };
 
-  let currentResult = lines[0];
-  const steps = [];
+	let currentResult = lines[0];
+	const steps = [];
 
-  for (let i = 1; i < lines.length; i++) {
-    const nextLine = lines[i];
-    const prevResult = currentResult;
-    const newResult = computeLCSDiff(prevResult, nextLine);
+	for (let i = 1; i < lines.length; i++) {
+		const nextLine = lines[i];
+		const prevResult = currentResult;
+		const newResult = computeLCSDiff(prevResult, nextLine);
 
-    steps.push({
-      stepIndex: i,
-      inputA: prevResult,
-      inputB: nextLine,
-      output: newResult,
-    });
+		steps.push({
+			stepIndex: i,
+			inputA: prevResult,
+			inputB: nextLine,
+			output: newResult,
+		});
 
-    currentResult = newResult;
-  }
+		currentResult = newResult;
+	}
 
-  const escapedDiffChar = diffChar.value.replace(/[.*+?^${}()|[\\]/g, "\\$&");
-  const regexPattern = new RegExp(`${escapedDiffChar}+`, "g");
-  const regexResult = currentResult.replace(regexPattern, "(.+?)");
+	const escapedDiffChar = diffChar.value.replace(/[.*+?^${}()|[\\]/g, "\\$&");
+	const regexPattern = new RegExp(`${escapedDiffChar}+`, "g");
+	const regexResult = currentResult.replace(regexPattern, "(.+?)");
 
-  return { finalResult: currentResult, regexResult, steps };
+	return { finalResult: currentResult, regexResult, steps };
 });
 </script>
 

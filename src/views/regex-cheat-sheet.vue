@@ -1,149 +1,167 @@
 <script setup lang="ts">
-import ToolHeader from "../components/ToolHeader.vue";
 import ToolCard from "../components/ToolCard.vue";
+import ToolHeader from "../components/ToolHeader.vue";
 
 const sections = [
-  {
-    title: "Core Tokens",
-    rows: [
-      { syntax: ".", meaning: "Any character except newline (Oniguruma default)." },
-      { syntax: "\\O", meaning: "Any character (including newline)." },
-      { syntax: "\\N", meaning: "Any character except newline (explicit)." },
-      { syntax: "\\R", meaning: "Any newline sequence (\n, \r\n, etc.)." },
-      { syntax: "\\X", meaning: "Extended grapheme cluster (approximate)." },
-      { syntax: "^", meaning: "Start of line (unless singleline option)." },
-      { syntax: "$", meaning: "End of line (unless singleline option)." },
-      { syntax: "\\A", meaning: "Start of string." },
-      { syntax: "\\Z", meaning: "End of string or before final newline." },
-      { syntax: "\\z", meaning: "End of string." },
-      { syntax: "\\G", meaning: "Continue from previous match end." },
-    ],
-  },
-  {
-    title: "Character Classes",
-    rows: [
-      { syntax: "[abc]", meaning: "Any of a, b, or c." },
-      { syntax: "[^abc]", meaning: "Not a, b, or c." },
-      { syntax: "[a-z]", meaning: "Range a through z." },
-      { syntax: "[[:digit:]]", meaning: "POSIX class (digit)." },
-      { syntax: "[[:alpha:]]", meaning: "POSIX class (letter)." },
-      { syntax: "[[:alnum:]]", meaning: "POSIX class (letter or digit)." },
-      { syntax: "[[:space:]]", meaning: "POSIX class (whitespace)." },
-      { syntax: "[a-z&&[^aeiou]]", meaning: "Class intersection (consonants)." },
-      { syntax: "\\d / \\D", meaning: "Digit / non-digit (Unicode by default)." },
-      { syntax: "\\w / \\W", meaning: "Word / non-word (Unicode by default)." },
-      { syntax: "\\s / \\S", meaning: "Whitespace / non-whitespace (Unicode)." },
-      { syntax: "\\h / \\H", meaning: "Hex digit / non-hex digit." },
-      { syntax: "\\p{L}", meaning: "Unicode property (letters)." },
-      { syntax: "\\p{Script=Greek}", meaning: "Unicode script property." },
-      { syntax: "\\P{...}", meaning: "Negated Unicode property." },
-    ],
-  },
-  {
-    title: "Quantifiers",
-    rows: [
-      { syntax: "*", meaning: "0 or more (greedy)." },
-      { syntax: "+", meaning: "1 or more (greedy)." },
-      { syntax: "?", meaning: "0 or 1 (greedy)." },
-      { syntax: "{n}", meaning: "Exactly n." },
-      { syntax: "{n,}", meaning: "At least n." },
-      { syntax: "{n,m}", meaning: "Between n and m." },
-      { syntax: "*? +? ?? {n,m}?", meaning: "Lazy (non-greedy) variants." },
-      { syntax: "*+ ++ ?+ {n,m}+", meaning: "Possessive variants (where supported)." },
-      { syntax: "(?>...)", meaning: "Atomic group (no backtracking)." },
-    ],
-  },
-  {
-    title: "Groups & Alternation",
-    rows: [
-      { syntax: "(...) ", meaning: "Capturing group." },
-      { syntax: "(?:...)", meaning: "Non-capturing group." },
-      { syntax: "(?<name>...)", meaning: "Named capture (preferred)." },
-      { syntax: "(?'name'...)", meaning: "Named capture (alternate)." },
-      { syntax: "...|...", meaning: "Alternation." },
-      { syntax: "(?=...)", meaning: "Positive lookahead." },
-      { syntax: "(?!...)", meaning: "Negative lookahead." },
-      { syntax: "(?<=...)", meaning: "Positive lookbehind." },
-      { syntax: "(?<!...)", meaning: "Negative lookbehind." },
-    ],
-  },
-  {
-    title: "Backreferences & Subroutines",
-    rows: [
-      { syntax: "\\1", meaning: "Numeric backreference." },
-      { syntax: "\\k<name>", meaning: "Named backreference." },
-      { syntax: "\\k<1>", meaning: "Numbered backreference (explicit)." },
-      { syntax: "\\g<name>", meaning: "Named subroutine call." },
-      { syntax: "\\g<1>", meaning: "Numbered subroutine call." },
-      { syntax: "\\g<0>", meaning: "Recursion (entire pattern)." },
-    ],
-  },
-  {
-    title: "Flags & Modifiers",
-    rows: [
-      { syntax: "i", meaning: "Ignore case (Unicode-aware)." },
-      { syntax: "m", meaning: "Dot matches newline (equivalent to JS s)." },
-      { syntax: "x", meaning: "Extended mode (ignore whitespace/comments)." },
-      { syntax: "D", meaning: "ASCII digit classes." },
-      { syntax: "S", meaning: "ASCII space classes." },
-      { syntax: "W", meaning: "ASCII word classes." },
-      { syntax: "y{g}", meaning: "Grapheme text segment mode." },
-      { syntax: "(?imx-imx:...)", meaning: "Scoped flag group." },
-      { syntax: "(?imx-imx)", meaning: "Inline flags (from this point)." },
-    ],
-  },
-  {
-    title: "Anchors & Boundaries",
-    rows: [
-      { syntax: "\\b / \\B", meaning: "Word boundary / non-boundary." },
-      { syntax: "\\y / \\Y", meaning: "Text segment boundaries (often unsupported)." },
-      { syntax: "\\A, \\Z, \\z", meaning: "String boundaries." },
-      { syntax: "\\G", meaning: "End of previous match (global scanning)." },
-    ],
-  },
-  {
-    title: "Special Constructs",
-    rows: [
-      { syntax: "(?# comment)", meaning: "Inline comment group." },
-      { syntax: "\\K", meaning: "Keep: resets match start (top-level only)." },
-      { syntax: "(*FAIL)", meaning: "Force a match failure." },
-      { syntax: "(?~...)", meaning: "Absence operator (rare)." },
-    ],
-  },
+	{
+		title: "Core Tokens",
+		rows: [
+			{
+				syntax: ".",
+				meaning: "Any character except newline (Oniguruma default).",
+			},
+			{ syntax: "\\O", meaning: "Any character (including newline)." },
+			{ syntax: "\\N", meaning: "Any character except newline (explicit)." },
+			{ syntax: "\\R", meaning: "Any newline sequence (\n, \r\n, etc.)." },
+			{ syntax: "\\X", meaning: "Extended grapheme cluster (approximate)." },
+			{ syntax: "^", meaning: "Start of line (unless singleline option)." },
+			{ syntax: "$", meaning: "End of line (unless singleline option)." },
+			{ syntax: "\\A", meaning: "Start of string." },
+			{ syntax: "\\Z", meaning: "End of string or before final newline." },
+			{ syntax: "\\z", meaning: "End of string." },
+			{ syntax: "\\G", meaning: "Continue from previous match end." },
+		],
+	},
+	{
+		title: "Character Classes",
+		rows: [
+			{ syntax: "[abc]", meaning: "Any of a, b, or c." },
+			{ syntax: "[^abc]", meaning: "Not a, b, or c." },
+			{ syntax: "[a-z]", meaning: "Range a through z." },
+			{ syntax: "[[:digit:]]", meaning: "POSIX class (digit)." },
+			{ syntax: "[[:alpha:]]", meaning: "POSIX class (letter)." },
+			{ syntax: "[[:alnum:]]", meaning: "POSIX class (letter or digit)." },
+			{ syntax: "[[:space:]]", meaning: "POSIX class (whitespace)." },
+			{
+				syntax: "[a-z&&[^aeiou]]",
+				meaning: "Class intersection (consonants).",
+			},
+			{
+				syntax: "\\d / \\D",
+				meaning: "Digit / non-digit (Unicode by default).",
+			},
+			{ syntax: "\\w / \\W", meaning: "Word / non-word (Unicode by default)." },
+			{
+				syntax: "\\s / \\S",
+				meaning: "Whitespace / non-whitespace (Unicode).",
+			},
+			{ syntax: "\\h / \\H", meaning: "Hex digit / non-hex digit." },
+			{ syntax: "\\p{L}", meaning: "Unicode property (letters)." },
+			{ syntax: "\\p{Script=Greek}", meaning: "Unicode script property." },
+			{ syntax: "\\P{...}", meaning: "Negated Unicode property." },
+		],
+	},
+	{
+		title: "Quantifiers",
+		rows: [
+			{ syntax: "*", meaning: "0 or more (greedy)." },
+			{ syntax: "+", meaning: "1 or more (greedy)." },
+			{ syntax: "?", meaning: "0 or 1 (greedy)." },
+			{ syntax: "{n}", meaning: "Exactly n." },
+			{ syntax: "{n,}", meaning: "At least n." },
+			{ syntax: "{n,m}", meaning: "Between n and m." },
+			{ syntax: "*? +? ?? {n,m}?", meaning: "Lazy (non-greedy) variants." },
+			{
+				syntax: "*+ ++ ?+ {n,m}+",
+				meaning: "Possessive variants (where supported).",
+			},
+			{ syntax: "(?>...)", meaning: "Atomic group (no backtracking)." },
+		],
+	},
+	{
+		title: "Groups & Alternation",
+		rows: [
+			{ syntax: "(...) ", meaning: "Capturing group." },
+			{ syntax: "(?:...)", meaning: "Non-capturing group." },
+			{ syntax: "(?<name>...)", meaning: "Named capture (preferred)." },
+			{ syntax: "(?'name'...)", meaning: "Named capture (alternate)." },
+			{ syntax: "...|...", meaning: "Alternation." },
+			{ syntax: "(?=...)", meaning: "Positive lookahead." },
+			{ syntax: "(?!...)", meaning: "Negative lookahead." },
+			{ syntax: "(?<=...)", meaning: "Positive lookbehind." },
+			{ syntax: "(?<!...)", meaning: "Negative lookbehind." },
+		],
+	},
+	{
+		title: "Backreferences & Subroutines",
+		rows: [
+			{ syntax: "\\1", meaning: "Numeric backreference." },
+			{ syntax: "\\k<name>", meaning: "Named backreference." },
+			{ syntax: "\\k<1>", meaning: "Numbered backreference (explicit)." },
+			{ syntax: "\\g<name>", meaning: "Named subroutine call." },
+			{ syntax: "\\g<1>", meaning: "Numbered subroutine call." },
+			{ syntax: "\\g<0>", meaning: "Recursion (entire pattern)." },
+		],
+	},
+	{
+		title: "Flags & Modifiers",
+		rows: [
+			{ syntax: "i", meaning: "Ignore case (Unicode-aware)." },
+			{ syntax: "m", meaning: "Dot matches newline (equivalent to JS s)." },
+			{ syntax: "x", meaning: "Extended mode (ignore whitespace/comments)." },
+			{ syntax: "D", meaning: "ASCII digit classes." },
+			{ syntax: "S", meaning: "ASCII space classes." },
+			{ syntax: "W", meaning: "ASCII word classes." },
+			{ syntax: "y{g}", meaning: "Grapheme text segment mode." },
+			{ syntax: "(?imx-imx:...)", meaning: "Scoped flag group." },
+			{ syntax: "(?imx-imx)", meaning: "Inline flags (from this point)." },
+		],
+	},
+	{
+		title: "Anchors & Boundaries",
+		rows: [
+			{ syntax: "\\b / \\B", meaning: "Word boundary / non-boundary." },
+			{
+				syntax: "\\y / \\Y",
+				meaning: "Text segment boundaries (often unsupported).",
+			},
+			{ syntax: "\\A, \\Z, \\z", meaning: "String boundaries." },
+			{ syntax: "\\G", meaning: "End of previous match (global scanning)." },
+		],
+	},
+	{
+		title: "Special Constructs",
+		rows: [
+			{ syntax: "(?# comment)", meaning: "Inline comment group." },
+			{ syntax: "\\K", meaning: "Keep: resets match start (top-level only)." },
+			{ syntax: "(*FAIL)", meaning: "Force a match failure." },
+			{ syntax: "(?~...)", meaning: "Absence operator (rare)." },
+		],
+	},
 ];
 
 const examples = [
-  {
-    title: "Hex words (extended mode)",
-    pattern: String.raw`(?x)
+	{
+		title: "Hex words (extended mode)",
+		pattern: String.raw`(?x)
       \b
       [0-9A-Fa-f]+
       \b
     `,
-    desc: "Ignore whitespace/comments while matching hex words.",
-  },
-  {
-    title: "Unicode letters",
-    pattern: String.raw`\p{L}+`,
-    desc: "Matches letters in any script.",
-  },
-  {
-    title: "Named capture + backreference",
-    pattern: String.raw`(?<word>\w+)\s+\k<word>`,
-    desc: "Finds repeated words like 'hello hello'.",
-  },
-  {
-    title: "Atomic group",
-    pattern: String.raw`(?>\d{2})\d`,
-    desc: "Prevents backtracking into the first two digits.",
-  },
+		desc: "Ignore whitespace/comments while matching hex words.",
+	},
+	{
+		title: "Unicode letters",
+		pattern: String.raw`\p{L}+`,
+		desc: "Matches letters in any script.",
+	},
+	{
+		title: "Named capture + backreference",
+		pattern: String.raw`(?<word>\w+)\s+\k<word>`,
+		desc: "Finds repeated words like 'hello hello'.",
+	},
+	{
+		title: "Atomic group",
+		pattern: String.raw`(?>\d{2})\d`,
+		desc: "Prevents backtracking into the first two digits.",
+	},
 ];
 
 const caveats = [
-  "Oniguruma's flag 'm' means dot-all, unlike JavaScript's multiline.",
-  "Unicode is default for \\d, \\w, \\s unless you enable ASCII flags (D/S/W).",
-  "Some advanced features depend on target support when transpiled to JavaScript.",
-  "Using oniguruma-to-es, patterns may be emulated with a RegExp subclass.",
+	"Oniguruma's flag 'm' means dot-all, unlike JavaScript's multiline.",
+	"Unicode is default for \\d, \\w, \\s unless you enable ASCII flags (D/S/W).",
+	"Some advanced features depend on target support when transpiled to JavaScript.",
+	"Using oniguruma-to-es, patterns may be emulated with a RegExp subclass.",
 ];
 </script>
 

@@ -1,114 +1,118 @@
 <script setup lang="ts">
-import { ref, reactive, watch } from "vue";
+import { reactive, ref, watch } from "vue";
 import { Cropper } from "vue-advanced-cropper";
 import "vue-advanced-cropper/dist/style.css";
-import ToolHeader from "../components/ToolHeader.vue";
-import ToolCard from "../components/ToolCard.vue";
 import DownloadLink from "../components/DownloadLink.vue";
 import FilePicker from "../components/FilePicker.vue";
 import LoadingOverlay from "../components/LoadingOverlay.vue";
+import ToolCard from "../components/ToolCard.vue";
+import ToolHeader from "../components/ToolHeader.vue";
 
 const sourceImageUrl = ref<string | null>(null);
 const resultImageUrl = ref<string | null>(null);
-const cropper = ref<any>(null);
+const cropper = ref<InstanceType<typeof Cropper> | null>(null);
 const isProcessing = ref(false);
 
 const config = reactive({
-  width: 0,
-  height: 0,
-  unit: "px",
-  maintainAspectRatio: true,
-  format: "image/png",
-  quality: 0.9,
+	width: 0,
+	height: 0,
+	unit: "px",
+	maintainAspectRatio: true,
+	format: "image/png",
+	quality: 0.9,
 });
 
 const prevUnit = ref("px");
 
 const units = {
-  px: 1,
-  in: 96,
-  cm: 96 / 2.54,
-  mm: 96 / 25.4,
+	px: 1,
+	in: 96,
+	cm: 96 / 2.54,
+	mm: 96 / 25.4,
 };
 
-const toPx = (val: number, unit: string) => val * (units[unit as keyof typeof units] || 1);
+const toPx = (val: number, unit: string) =>
+	val * (units[unit as keyof typeof units] || 1);
 const fromPx = (val: number, unit: string) =>
-  Number((val / (units[unit as keyof typeof units] || 1)).toFixed(2));
+	Number((val / (units[unit as keyof typeof units] || 1)).toFixed(2));
 
 const handleFileChange = (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  const file = target.files?.[0];
-  if (file) {
-    isProcessing.value = true;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      sourceImageUrl.value = e.target?.result as string;
-      resultImageUrl.value = null;
-      isProcessing.value = false;
-    };
-    reader.readAsDataURL(file);
-  }
+	const target = event.target as HTMLInputElement;
+	const file = target.files?.[0];
+	if (file) {
+		isProcessing.value = true;
+		const reader = new FileReader();
+		reader.onload = (e) => {
+			sourceImageUrl.value = e.target?.result as string;
+			resultImageUrl.value = null;
+			isProcessing.value = false;
+		};
+		reader.readAsDataURL(file);
+	}
 };
 
-const handleCropChange = ({ canvas }: any) => {
-  if (canvas) {
-    if (!config.width || config.maintainAspectRatio) {
-      config.width = fromPx(canvas.width, config.unit);
-      config.height = fromPx(canvas.height, config.unit);
-    }
-    resultImageUrl.value = canvas.toDataURL(config.format, config.quality);
-  }
+const handleCropChange = ({ canvas }: { canvas: HTMLCanvasElement | null }) => {
+	if (canvas) {
+		if (!config.width || config.maintainAspectRatio) {
+			config.width = fromPx(canvas.width, config.unit);
+			config.height = fromPx(canvas.height, config.unit);
+		}
+		resultImageUrl.value = canvas.toDataURL(config.format, config.quality);
+	}
 };
 
 const applyResize = () => {
-  if (!cropper.value) return;
-  const { canvas } = cropper.value.getResult();
-  if (canvas) {
-    isProcessing.value = true;
-    const targetWidth = Math.round(toPx(config.width, config.unit));
-    const targetHeight = Math.round(toPx(config.height, config.unit));
+	if (!cropper.value) return;
+	const { canvas } = cropper.value.getResult();
+	if (canvas) {
+		isProcessing.value = true;
+		const targetWidth = Math.round(toPx(config.width, config.unit));
+		const targetHeight = Math.round(toPx(config.height, config.unit));
 
-    const resizedCanvas = document.createElement("canvas");
-    resizedCanvas.width = targetWidth;
-    resizedCanvas.height = targetHeight;
-    const ctx = resizedCanvas.getContext("2d");
-    if (ctx) {
-      ctx.drawImage(canvas, 0, 0, targetWidth, targetHeight);
-      resultImageUrl.value = resizedCanvas.toDataURL(config.format, config.quality);
-    }
-    isProcessing.value = false;
-  }
+		const resizedCanvas = document.createElement("canvas");
+		resizedCanvas.width = targetWidth;
+		resizedCanvas.height = targetHeight;
+		const ctx = resizedCanvas.getContext("2d");
+		if (ctx) {
+			ctx.drawImage(canvas, 0, 0, targetWidth, targetHeight);
+			resultImageUrl.value = resizedCanvas.toDataURL(
+				config.format,
+				config.quality,
+			);
+		}
+		isProcessing.value = false;
+	}
 };
 
 const updateUnit = () => {
-  // Convert current values from old unit to px, then to new unit
-  const pxW = toPx(config.width, prevUnit.value);
-  const pxH = toPx(config.height, prevUnit.value);
-  config.width = fromPx(pxW, config.unit);
-  config.height = fromPx(pxH, config.unit);
-  prevUnit.value = config.unit;
+	// Convert current values from old unit to px, then to new unit
+	const pxW = toPx(config.width, prevUnit.value);
+	const pxH = toPx(config.height, prevUnit.value);
+	config.width = fromPx(pxW, config.unit);
+	config.height = fromPx(pxH, config.unit);
+	prevUnit.value = config.unit;
 };
 
 const updateWidth = (val: number) => {
-  if (config.maintainAspectRatio && cropper.value) {
-    const { canvas } = cropper.value.getResult();
-    if (canvas) {
-      const ratio = canvas.height / canvas.width;
-      config.height = Math.round(val * ratio);
-    }
-  }
-  applyResize();
+	if (config.maintainAspectRatio && cropper.value) {
+		const { canvas } = cropper.value.getResult();
+		if (canvas) {
+			const ratio = canvas.height / canvas.width;
+			config.height = Math.round(val * ratio);
+		}
+	}
+	applyResize();
 };
 
 const updateHeight = (val: number) => {
-  if (config.maintainAspectRatio && cropper.value) {
-    const { canvas } = cropper.value.getResult();
-    if (canvas) {
-      const ratio = canvas.width / canvas.height;
-      config.width = Math.round(val * ratio);
-    }
-  }
-  applyResize();
+	if (config.maintainAspectRatio && cropper.value) {
+		const { canvas } = cropper.value.getResult();
+		if (canvas) {
+			const ratio = canvas.width / canvas.height;
+			config.width = Math.round(val * ratio);
+		}
+	}
+	applyResize();
 };
 
 watch([() => config.format, () => config.quality], applyResize);

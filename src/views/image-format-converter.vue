@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import { MagickFormat } from "@imagemagick/magick-wasm";
-import { ref, computed, onBeforeUnmount, onMounted } from "vue";
 import * as Comlink from "comlink";
-import type { ImagemagickWorker, FormatOption } from "../workers/imagemagick-worker";
-import type { MupdfWorker } from "../workers/mupdf-worker";
-import ToolCard from "../components/ToolCard.vue";
-import FilePicker from "../components/FilePicker.vue";
-import ToolHeader from "../components/ToolHeader.vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import DownloadLink from "../components/DownloadLink.vue";
+import FilePicker from "../components/FilePicker.vue";
 import LoadingOverlay from "../components/LoadingOverlay.vue";
 import PdfViewer from "../components/PdfViewer.vue";
+import ToolCard from "../components/ToolCard.vue";
+import ToolHeader from "../components/ToolHeader.vue";
+import type {
+	FormatOption,
+	ImagemagickWorker,
+} from "../workers/imagemagick-worker";
+import type { MupdfWorker } from "../workers/mupdf-worker";
 
 const availableFormats = ref<FormatOption[]>([]);
 const targetFormat = ref<MagickFormat | null>(null);
@@ -19,17 +22,21 @@ const sourceBytes = ref<Uint8Array | null>(null);
 const sourcePdfBytes = ref<Uint8Array | null>(null);
 const sourcePreview = ref<string>("");
 const sourceName = ref<string>("");
-const sourceDetails = ref<{ width: number; height: number; format: MagickFormat } | null>(null);
+const sourceDetails = ref<{
+	width: number;
+	height: number;
+	format: MagickFormat;
+} | null>(null);
 const sourceError = ref("");
 
 const converting = ref(false);
 const result = ref<{
-  option: FormatOption;
-  blobUrl: string;
-  bytes: Uint8Array;
-  width: number;
-  height: number;
-  size: number;
+	option: FormatOption;
+	blobUrl: string;
+	bytes: Uint8Array;
+	width: number;
+	height: number;
+	size: number;
 } | null>(null);
 const conversionError = ref("");
 
@@ -39,134 +46,158 @@ let muWorker: Worker | null = null;
 let muApi: Comlink.Remote<MupdfWorker> | null = null;
 
 onMounted(async () => {
-  imWorker = new Worker(new URL("../workers/imagemagick-worker.ts", import.meta.url), {
-    type: "module",
-  });
-  imApi = Comlink.wrap<ImagemagickWorker>(imWorker);
-  muWorker = new Worker(new URL("../workers/mupdf-worker.ts", import.meta.url), { type: "module" });
-  muApi = Comlink.wrap<MupdfWorker>(muWorker);
-  await loadFormats();
+	imWorker = new Worker(
+		new URL("../workers/imagemagick-worker.ts", import.meta.url),
+		{
+			type: "module",
+		},
+	);
+	imApi = Comlink.wrap<ImagemagickWorker>(imWorker);
+	muWorker = new Worker(
+		new URL("../workers/mupdf-worker.ts", import.meta.url),
+		{ type: "module" },
+	);
+	muApi = Comlink.wrap<MupdfWorker>(muWorker);
+	await loadFormats();
 });
 
 const loadFormats = async () => {
-  if (!imApi) return;
-  loadingFormats.value = true;
-  try {
-    const writable = await imApi.getWritableFormatOptions();
-    availableFormats.value = writable;
-    if (writable.length > 0) {
-      targetFormat.value = writable[0].format;
-    }
-  } catch (error) {
-    console.error("Failed to load formats", error);
-  } finally {
-    loadingFormats.value = false;
-  }
+	if (!imApi) return;
+	loadingFormats.value = true;
+	try {
+		const writable = await imApi.getWritableFormatOptions();
+		availableFormats.value = writable;
+		if (writable.length > 0) {
+			targetFormat.value = writable[0].format;
+		}
+	} catch (error) {
+		console.error("Failed to load formats", error);
+	} finally {
+		loadingFormats.value = false;
+	}
 };
 
 const readFile = async (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  const file = target.files?.[0];
-  if (!file || !muApi || !imApi) return;
+	const target = event.target as HTMLInputElement;
+	const file = target.files?.[0];
+	if (!file || !muApi || !imApi) return;
 
-  sourceError.value = "";
-  if (result.value?.blobUrl) URL.revokeObjectURL(result.value.blobUrl);
-  result.value = null;
+	sourceError.value = "";
+	if (result.value?.blobUrl) URL.revokeObjectURL(result.value.blobUrl);
+	result.value = null;
 
-  const buffer = new Uint8Array(await file.arrayBuffer());
-  sourceName.value = file.name;
-  sourcePdfBytes.value = null;
+	const buffer = new Uint8Array(await file.arrayBuffer());
+	sourceName.value = file.name;
+	sourcePdfBytes.value = null;
 
-  let processBuffer: Uint8Array = buffer;
-  if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
-    sourcePdfBytes.value = buffer;
-    try {
-      processBuffer = await muApi.rasterizePdf(buffer);
-    } catch (error) {
-      sourceError.value =
-        "Failed to rasterize PDF: " + (error instanceof Error ? error.message : String(error));
-      return;
-    }
-  }
-  sourceBytes.value = processBuffer;
+	let processBuffer: Uint8Array = buffer;
+	if (
+		file.type === "application/pdf" ||
+		file.name.toLowerCase().endsWith(".pdf")
+	) {
+		sourcePdfBytes.value = buffer;
+		try {
+			processBuffer = await muApi.rasterizePdf(buffer);
+		} catch (error) {
+			sourceError.value =
+				"Failed to rasterize PDF: " +
+				(error instanceof Error ? error.message : String(error));
+			return;
+		}
+	}
+	sourceBytes.value = processBuffer;
 
-  if (sourcePreview.value) URL.revokeObjectURL(sourcePreview.value);
-  sourcePreview.value = URL.createObjectURL(
-    new Blob([processBuffer as any], { type: "image/png" }),
-  );
+	if (sourcePreview.value) URL.revokeObjectURL(sourcePreview.value);
+	sourcePreview.value = URL.createObjectURL(
+		new Blob([processBuffer as BlobPart], { type: "image/png" }),
+	);
 
-  try {
-    sourceDetails.value = await imApi.readMetadata(processBuffer);
-  } catch (error) {
-    sourceDetails.value = null;
-    sourceError.value = error instanceof Error ? error.message : "Unable to read the image.";
-  }
+	try {
+		sourceDetails.value = await imApi.readMetadata(processBuffer);
+	} catch (error) {
+		sourceDetails.value = null;
+		sourceError.value =
+			error instanceof Error ? error.message : "Unable to read the image.";
+	}
 };
 
 const convert = async () => {
-  if (!sourceBytes.value || !targetFormat.value || converting.value || !imApi || !muApi) return;
-  converting.value = true;
-  conversionError.value = "";
+	if (
+		!sourceBytes.value ||
+		!targetFormat.value ||
+		converting.value ||
+		!imApi ||
+		!muApi
+	)
+		return;
+	converting.value = true;
+	conversionError.value = "";
 
-  const option = availableFormats.value.find((f) => f.format === targetFormat.value);
-  if (!option) {
-    converting.value = false;
-    return;
-  }
+	const option = availableFormats.value.find(
+		(f) => f.format === targetFormat.value,
+	);
+	if (!option) {
+		converting.value = false;
+		return;
+	}
 
-  try {
-    let converted: Uint8Array;
-    if (targetFormat.value === MagickFormat.Pdf) {
-      const pngBytes = await imApi.convert(sourceBytes.value, MagickFormat.Png);
-      converted = await muApi.imageToPdf(pngBytes, "image/png");
-    } else {
-      converted = await imApi.convert(sourceBytes.value, targetFormat.value);
-    }
+	try {
+		let converted: Uint8Array;
+		if (targetFormat.value === MagickFormat.Pdf) {
+			const pngBytes = await imApi.convert(sourceBytes.value, MagickFormat.Png);
+			converted = await muApi.imageToPdf(pngBytes, "image/png");
+		} else {
+			converted = await imApi.convert(sourceBytes.value, targetFormat.value);
+		}
 
-    const metadata =
-      targetFormat.value === MagickFormat.Pdf
-        ? { width: sourceDetails.value?.width || 0, height: sourceDetails.value?.height || 0 }
-        : await imApi.readMetadata(converted);
+		const metadata =
+			targetFormat.value === MagickFormat.Pdf
+				? {
+						width: sourceDetails.value?.width || 0,
+						height: sourceDetails.value?.height || 0,
+					}
+				: await imApi.readMetadata(converted);
 
-    if (result.value?.blobUrl) URL.revokeObjectURL(result.value.blobUrl);
+		if (result.value?.blobUrl) URL.revokeObjectURL(result.value.blobUrl);
 
-    const blob = new Blob([converted] as any, { type: option.mimeType });
-    result.value = {
-      option,
-      blobUrl: URL.createObjectURL(blob),
-      bytes: converted,
-      width: metadata.width,
-      height: metadata.height,
-      size: blob.size,
-    };
-  } catch (error) {
-    conversionError.value = error instanceof Error ? error.message : "Conversion failed.";
-  } finally {
-    converting.value = false;
-  }
+		const blob = new Blob([converted as BlobPart], { type: option.mimeType });
+		result.value = {
+			option,
+			blobUrl: URL.createObjectURL(blob),
+			bytes: converted,
+			width: metadata.width,
+			height: metadata.height,
+			size: blob.size,
+		};
+	} catch (error) {
+		conversionError.value =
+			error instanceof Error ? error.message : "Conversion failed.";
+	} finally {
+		converting.value = false;
+	}
 };
 
 onBeforeUnmount(() => {
-  if (sourcePreview.value) URL.revokeObjectURL(sourcePreview.value);
-  if (result.value?.blobUrl) URL.revokeObjectURL(result.value.blobUrl);
-  imWorker?.terminate();
-  muWorker?.terminate();
+	if (sourcePreview.value) URL.revokeObjectURL(sourcePreview.value);
+	if (result.value?.blobUrl) URL.revokeObjectURL(result.value.blobUrl);
+	imWorker?.terminate();
+	muWorker?.terminate();
 });
 
 onBeforeUnmount(() => {
-  if (sourcePreview.value) URL.revokeObjectURL(sourcePreview.value);
-  if (result.value?.blobUrl) URL.revokeObjectURL(result.value.blobUrl);
+	if (sourcePreview.value) URL.revokeObjectURL(sourcePreview.value);
+	if (result.value?.blobUrl) URL.revokeObjectURL(result.value.blobUrl);
 });
 
 const formatSize = (bytes: number) => {
-  const units = ["B", "KB", "MB", "GB"];
-  let size = bytes;
-  let unitIndex = 0;
-  while (size >= 1024 && unitIndex < units.length - 1) {
-    size /= 1024;
-    unitIndex++;
-  }
-  return `${size.toFixed(1)} ${units[unitIndex]}`;
+	const units = ["B", "KB", "MB", "GB"];
+	let size = bytes;
+	let unitIndex = 0;
+	while (size >= 1024 && unitIndex < units.length - 1) {
+		size /= 1024;
+		unitIndex++;
+	}
+	return `${size.toFixed(1)} ${units[unitIndex]}`;
 };
 
 loadFormats();

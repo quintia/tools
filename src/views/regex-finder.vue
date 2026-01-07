@@ -1,90 +1,108 @@
 <script setup lang="ts">
+import {
+	EmulatedRegExp,
+	type ToRegExpOptions,
+	toRegExpDetails,
+} from "oniguruma-to-es";
 import { computed, ref } from "vue";
-import { EmulatedRegExp, toRegExpDetails, type ToRegExpOptions } from "oniguruma-to-es";
-import ToolHeader from "../components/ToolHeader.vue";
-import ToolCard from "../components/ToolCard.vue";
 import CopyButton from "../components/CopyButton.vue";
 import MonospaceEditor from "../components/MonospaceEditor.vue";
+import ToolCard from "../components/ToolCard.vue";
+import ToolHeader from "../components/ToolHeader.vue";
 
 type OnigurumaTarget = "auto" | "ES2018" | "ES2024" | "ES2025";
 type CompiledOniguruma = ReturnType<typeof toRegExpDetails>;
 type MatchSegment = { start: number; end: number; value: string };
 
 function compileOnigurumaRegex(
-  pattern: string,
-  options: { flags?: string; target?: OnigurumaTarget } = {},
+	pattern: string,
+	options: { flags?: string; target?: OnigurumaTarget } = {},
 ) {
-  if (pattern.trim() === "") return { compiled: null, error: null };
-  const rawFlags = options.flags?.replace(/\s+/g, "").trim();
-  const toRegExpOptions: ToRegExpOptions = {
-    global: true,
-    target: options.target ?? "auto",
-  };
-  if (rawFlags) toRegExpOptions.flags = rawFlags;
-  try {
-    const details = toRegExpDetails(pattern, toRegExpOptions);
-    return { compiled: details, error: null };
-  } catch (error) {
-    return { compiled: null, error: error instanceof Error ? error.message : String(error) };
-  }
+	if (pattern.trim() === "") return { compiled: null, error: null };
+	const rawFlags = options.flags?.replace(/\s+/g, "").trim();
+	const toRegExpOptions: ToRegExpOptions = {
+		global: true,
+		target: options.target ?? "auto",
+	};
+	if (rawFlags) toRegExpOptions.flags = rawFlags;
+	try {
+		const details = toRegExpDetails(pattern, toRegExpOptions);
+		return { compiled: details, error: null };
+	} catch (error) {
+		return {
+			compiled: null,
+			error: error instanceof Error ? error.message : String(error),
+		};
+	}
 }
 
 function createOnigurumaRegExp(compiled: CompiledOniguruma): RegExp {
-  if (compiled.options) {
-    return new EmulatedRegExp(compiled.pattern, compiled.flags, compiled.options);
-  }
-  return new RegExp(compiled.pattern, compiled.flags);
+	if (compiled.options) {
+		return new EmulatedRegExp(
+			compiled.pattern,
+			compiled.flags,
+			compiled.options,
+		);
+	}
+	return new RegExp(compiled.pattern, compiled.flags);
 }
 
-function findMatches(text: string, compiled: CompiledOniguruma, maxMatches: number) {
-  const safeLimit = Number.isFinite(maxMatches) ? Math.max(0, Math.floor(maxMatches)) : 0;
-  if (safeLimit === 0) return { matches: [], truncated: false };
+function findMatches(
+	text: string,
+	compiled: CompiledOniguruma,
+	maxMatches: number,
+) {
+	const safeLimit = Number.isFinite(maxMatches)
+		? Math.max(0, Math.floor(maxMatches))
+		: 0;
+	if (safeLimit === 0) return { matches: [], truncated: false };
 
-  const regex = createOnigurumaRegExp(compiled);
-  const matches: MatchSegment[] = [];
-  let truncated = false;
-  let match: RegExpExecArray | null = regex.exec(text);
+	const regex = createOnigurumaRegExp(compiled);
+	const matches: MatchSegment[] = [];
+	let truncated = false;
+	let match: RegExpExecArray | null = regex.exec(text);
 
-  while (match) {
-    const start = match.index;
-    const end = start + match[0].length;
-    matches.push({ start, end, value: match[0] });
-    if (match[0].length === 0) regex.lastIndex = start + 1;
-    if (matches.length >= safeLimit) {
-      truncated = true;
-      break;
-    }
-    match = regex.exec(text);
-  }
-  return { matches, truncated };
+	while (match) {
+		const start = match.index;
+		const end = start + match[0].length;
+		matches.push({ start, end, value: match[0] });
+		if (match[0].length === 0) regex.lastIndex = start + 1;
+		if (matches.length >= safeLimit) {
+			truncated = true;
+			break;
+		}
+		match = regex.exec(text);
+	}
+	return { matches, truncated };
 }
 
 function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
+	return value
+		.replaceAll("&", "&amp;")
+		.replaceAll("<", "&lt;")
+		.replaceAll(">", "&gt;")
+		.replaceAll('"', "&quot;")
+		.replaceAll("'", "&#39;");
 }
 
 function buildHighlightedHtml(text: string, matches: MatchSegment[]): string {
-  if (matches.length === 0) return escapeHtml(text);
-  const fragments: string[] = [];
-  let cursor = 0;
-  for (const match of matches) {
-    if (match.start > cursor) fragments.push(escapeHtml(text.slice(cursor, match.start)));
-    fragments.push(
-      `<mark class="text-finder-highlight">${escapeHtml(text.slice(match.start, match.end))}</mark>`,
-    );
-    cursor = match.end;
-  }
-  if (cursor < text.length) fragments.push(escapeHtml(text.slice(cursor)));
-  return fragments.join("");
+	if (matches.length === 0) return escapeHtml(text);
+	const fragments: string[] = [];
+	let cursor = 0;
+	for (const match of matches) {
+		if (match.start > cursor)
+			fragments.push(escapeHtml(text.slice(cursor, match.start)));
+		fragments.push(
+			`<mark class="text-finder-highlight">${escapeHtml(text.slice(match.start, match.end))}</mark>`,
+		);
+		cursor = match.end;
+	}
+	if (cursor < text.length) fragments.push(escapeHtml(text.slice(cursor)));
+	return fragments.join("");
 }
 
 const text = ref(
-  "Oniguruma powers regex in Ruby, TextMate grammars, and many editors.\nTry patterns like \\h+, (?x) with comments, or Unicode classes like \\p{L}.\nFind hex: deadBEEF, cafe, 1234, and mix of words.",
+	"Oniguruma powers regex in Ruby, TextMate grammars, and many editors.\nTry patterns like \\h+, (?x) with comments, or Unicode classes like \\p{L}.\nFind hex: deadBEEF, cafe, 1234, and mix of words.",
 );
 const pattern = ref("\\b\\h+\\b");
 const flags = ref("i");
@@ -92,43 +110,52 @@ const target = ref<OnigurumaTarget>("auto");
 const maxMatches = ref(500);
 
 const compileResult = computed(() =>
-  compileOnigurumaRegex(pattern.value, { flags: flags.value, target: target.value }),
+	compileOnigurumaRegex(pattern.value, {
+		flags: flags.value,
+		target: target.value,
+	}),
 );
 
 const matchesResult = computed(() => {
-  if (!compileResult.value.compiled) {
-    return { matches: [], truncated: false };
-  }
-  return findMatches(text.value, compileResult.value.compiled, maxMatches.value);
+	if (!compileResult.value.compiled) {
+		return { matches: [], truncated: false };
+	}
+	return findMatches(
+		text.value,
+		compileResult.value.compiled,
+		maxMatches.value,
+	);
 });
 
 const highlightedHtml = computed(() =>
-  buildHighlightedHtml(text.value, matchesResult.value.matches),
+	buildHighlightedHtml(text.value, matchesResult.value.matches),
 );
 
 const matchList = computed(() =>
-  matchesResult.value.matches
-    .map((match) => (match.value === "" ? "(empty match)" : match.value))
-    .join("\n"),
+	matchesResult.value.matches
+		.map((match) => (match.value === "" ? "(empty match)" : match.value))
+		.join("\n"),
 );
 
 const matchSummary = computed(() => {
-  if (!pattern.value.trim()) {
-    return "Enter a pattern";
-  }
-  if (compileResult.value.error) {
-    return "Invalid pattern";
-  }
-  const count = matchesResult.value.matches.length;
-  return matchesResult.value.truncated ? `${count}+ matches (truncated)` : `${count} matches`;
+	if (!pattern.value.trim()) {
+		return "Enter a pattern";
+	}
+	if (compileResult.value.error) {
+		return "Invalid pattern";
+	}
+	const count = matchesResult.value.matches.length;
+	return matchesResult.value.truncated
+		? `${count}+ matches (truncated)`
+		: `${count} matches`;
 });
 
 const compiledPreview = computed(() => {
-  const compiled = compileResult.value.compiled;
-  if (!compiled) {
-    return "";
-  }
-  return `/${compiled.pattern}/${compiled.flags}`;
+	const compiled = compileResult.value.compiled;
+	if (!compiled) {
+		return "";
+	}
+	return `/${compiled.pattern}/${compiled.flags}`;
 });
 </script>
 

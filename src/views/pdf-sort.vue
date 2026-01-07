@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from "vue";
 import * as Comlink from "comlink";
-import type { MupdfWorker } from "../workers/mupdf-worker";
 import Sortable from "sortablejs";
-import ToolHeader from "../components/ToolHeader.vue";
-import ToolCard from "../components/ToolCard.vue";
+import { onMounted, onUnmounted, ref, watch } from "vue";
 import DownloadLink from "../components/DownloadLink.vue";
 import FilePicker from "../components/FilePicker.vue";
 import LoadingOverlay from "../components/LoadingOverlay.vue";
+import ToolCard from "../components/ToolCard.vue";
+import ToolHeader from "../components/ToolHeader.vue";
+import type { MupdfWorker } from "../workers/mupdf-worker";
 
 interface PageItem {
-  id: string;
-  originalIndex: number;
-  thumbnail: string;
+	id: string;
+	originalIndex: number;
+	thumbnail: string;
 }
 
 const fileData = ref<Uint8Array | null>(null);
@@ -27,94 +27,96 @@ let worker: Worker | null = null;
 let api: Comlink.Remote<MupdfWorker> | null = null;
 
 onMounted(() => {
-  worker = new Worker(new URL("../workers/mupdf-worker.ts", import.meta.url), { type: "module" });
-  api = Comlink.wrap<MupdfWorker>(worker);
+	worker = new Worker(new URL("../workers/mupdf-worker.ts", import.meta.url), {
+		type: "module",
+	});
+	api = Comlink.wrap<MupdfWorker>(worker);
 });
 
 onUnmounted(() => {
-  worker?.terminate();
+	worker?.terminate();
 });
 
 watch(sortableList, (newEl) => {
-  if (newEl && !sortableInstance) {
-    sortableInstance = Sortable.create(newEl, {
-      animation: 150,
-      ghostClass: "opacity-50",
-      onEnd: (evt) => {
-        const { oldIndex, newIndex } = evt;
-        if (oldIndex !== undefined && newIndex !== undefined) {
-          const item = pages.value.splice(oldIndex, 1)[0];
-          pages.value.splice(newIndex, 0, item);
-          downloadUrl.value = null;
-        }
-      },
-    });
-  }
+	if (newEl && !sortableInstance) {
+		sortableInstance = Sortable.create(newEl, {
+			animation: 150,
+			ghostClass: "opacity-50",
+			onEnd: (evt) => {
+				const { oldIndex, newIndex } = evt;
+				if (oldIndex !== undefined && newIndex !== undefined) {
+					const item = pages.value.splice(oldIndex, 1)[0];
+					pages.value.splice(newIndex, 0, item);
+					downloadUrl.value = null;
+				}
+			},
+		});
+	}
 });
 
 const handleFileChange = async (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  const file = target.files?.[0];
-  if (file && file.type === "application/pdf") {
-    fileName.value = file.name;
-    const arrayBuffer = await file.arrayBuffer();
-    fileData.value = new Uint8Array(arrayBuffer);
-    downloadUrl.value = null;
-    await generateThumbnails();
-  }
+	const target = event.target as HTMLInputElement;
+	const file = target.files?.[0];
+	if (file && file.type === "application/pdf") {
+		fileName.value = file.name;
+		const arrayBuffer = await file.arrayBuffer();
+		fileData.value = new Uint8Array(arrayBuffer);
+		downloadUrl.value = null;
+		await generateThumbnails();
+	}
 };
 
 const generateThumbnails = async () => {
-  if (!fileData.value || !api) return;
+	if (!fileData.value || !api) return;
 
-  isProcessing.value = true;
-  pages.value = [];
+	isProcessing.value = true;
+	pages.value = [];
 
-  try {
-    const thumbnails = await api.renderThumbnails(fileData.value, 0.5);
+	try {
+		const thumbnails = await api.renderThumbnails(fileData.value, 0.5);
 
-    for (const thumb of thumbnails) {
-      const canvas = document.createElement("canvas");
-      canvas.width = thumb.width;
-      canvas.height = thumb.height;
-      const ctx = canvas.getContext("2d");
+		for (const thumb of thumbnails) {
+			const canvas = document.createElement("canvas");
+			canvas.width = thumb.width;
+			canvas.height = thumb.height;
+			const ctx = canvas.getContext("2d");
 
-      if (ctx) {
-        const samples = new Uint8ClampedArray(thumb.pixels);
-        const imageData = new ImageData(samples, thumb.width, thumb.height);
-        ctx.putImageData(imageData, 0, 0);
+			if (ctx) {
+				const samples = new Uint8ClampedArray(thumb.pixels);
+				const imageData = new ImageData(samples, thumb.width, thumb.height);
+				ctx.putImageData(imageData, 0, 0);
 
-        pages.value.push({
-          id: Math.random().toString(36).substr(2, 9),
-          originalIndex: thumb.index,
-          thumbnail: canvas.toDataURL(),
-        });
-      }
-    }
-  } catch (error) {
-    console.error("Thumbnail generation error:", error);
-  } finally {
-    isProcessing.value = false;
-  }
+				pages.value.push({
+					id: Math.random().toString(36).substr(2, 9),
+					originalIndex: thumb.index,
+					thumbnail: canvas.toDataURL(),
+				});
+			}
+		}
+	} catch (error) {
+		console.error("Thumbnail generation error:", error);
+	} finally {
+		isProcessing.value = false;
+	}
 };
 
 const exportPdf = async () => {
-  if (!fileData.value || pages.value.length === 0 || !api) return;
+	if (!fileData.value || pages.value.length === 0 || !api) return;
 
-  isProcessing.value = true;
-  try {
-    const result = await api.extractPages(
-      fileData.value,
-      pages.value.map((p) => p.originalIndex),
-    );
-    const blob = new Blob([result as any], { type: "application/pdf" });
-    downloadUrl.value = URL.createObjectURL(blob);
-  } catch (error) {
-    console.error("PDF Export Error:", error);
-    alert("An error occurred while exporting the PDF.");
-  } finally {
-    isProcessing.value = false;
-  }
+	isProcessing.value = true;
+	try {
+		const result = await api.extractPages(
+			fileData.value,
+			pages.value.map((p) => p.originalIndex),
+		);
+		const blob = new Blob([result as BlobPart], { type: "application/pdf" });
+		downloadUrl.value = URL.createObjectURL(blob);
+	} catch (error) {
+		console.error("PDF Export Error:", error);
+		alert("An error occurred while exporting the PDF.");
+	} finally {
+		isProcessing.value = false;
+	}
 };
 </script>
 

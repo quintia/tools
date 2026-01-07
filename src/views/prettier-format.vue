@@ -119,8 +119,6 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
-import prettier from "prettier/standalone";
 import pluginAcorn from "prettier/plugins/acorn";
 import pluginAngular from "prettier/plugins/angular";
 import pluginBabel from "prettier/plugins/babel";
@@ -134,28 +132,30 @@ import pluginMeriyah from "prettier/plugins/meriyah";
 import pluginPostcss from "prettier/plugins/postcss";
 import pluginTypeScript from "prettier/plugins/typescript";
 import pluginYaml from "prettier/plugins/yaml";
+import prettier from "prettier/standalone";
+import { computed, ref, watch } from "vue";
 
 const parserOptions = [
-  { value: "babel", label: "JavaScript (Babel)" },
-  { value: "babel-ts", label: "TypeScript (via Babel)" },
-  { value: "typescript", label: "TypeScript" },
-  { value: "acorn", label: "JavaScript (Acorn)" },
-  { value: "flow", label: "Flow" },
-  { value: "meriyah", label: "Meriyah" },
-  { value: "json", label: "JSON" },
-  { value: "json5", label: "JSON5" },
-  { value: "json-stringify", label: "JSON Stringify" },
-  { value: "css", label: "CSS" },
-  { value: "scss", label: "SCSS" },
-  { value: "less", label: "Less" },
-  { value: "html", label: "HTML" },
-  { value: "angular", label: "Angular" },
-  { value: "vue", label: "Vue" },
-  { value: "markdown", label: "Markdown" },
-  { value: "mdx", label: "MDX" },
-  { value: "graphql", label: "GraphQL" },
-  { value: "yaml", label: "YAML" },
-  { value: "glimmer", label: "Handlebars / Glimmer" },
+	{ value: "babel", label: "JavaScript (Babel)" },
+	{ value: "babel-ts", label: "TypeScript (via Babel)" },
+	{ value: "typescript", label: "TypeScript" },
+	{ value: "acorn", label: "JavaScript (Acorn)" },
+	{ value: "flow", label: "Flow" },
+	{ value: "meriyah", label: "Meriyah" },
+	{ value: "json", label: "JSON" },
+	{ value: "json5", label: "JSON5" },
+	{ value: "json-stringify", label: "JSON Stringify" },
+	{ value: "css", label: "CSS" },
+	{ value: "scss", label: "SCSS" },
+	{ value: "less", label: "Less" },
+	{ value: "html", label: "HTML" },
+	{ value: "angular", label: "Angular" },
+	{ value: "vue", label: "Vue" },
+	{ value: "markdown", label: "Markdown" },
+	{ value: "mdx", label: "MDX" },
+	{ value: "graphql", label: "GraphQL" },
+	{ value: "yaml", label: "YAML" },
+	{ value: "glimmer", label: "Handlebars / Glimmer" },
 ] as const;
 
 const input = ref(`function greet(name){console.log("Hello, " + name + "!")}`);
@@ -169,73 +169,96 @@ const trailingComma = ref<"none" | "es5" | "all">("es5");
 const error = ref("");
 
 const plugins = [
-  pluginAcorn,
-  pluginAngular,
-  pluginBabel,
-  pluginEstree,
-  pluginFlow,
-  pluginGlimmer,
-  pluginGraphql,
-  pluginHtml,
-  pluginMarkdown,
-  pluginMeriyah,
-  pluginPostcss,
-  pluginTypeScript,
-  pluginYaml,
+	pluginAcorn,
+	pluginAngular,
+	pluginBabel,
+	pluginEstree,
+	pluginFlow,
+	pluginGlimmer,
+	pluginGraphql,
+	pluginHtml,
+	pluginMarkdown,
+	pluginMeriyah,
+	pluginPostcss,
+	pluginTypeScript,
+	pluginYaml,
 ];
 
-const jsLikeParsers = new Set(["babel", "babel-ts", "typescript", "acorn", "flow", "meriyah"]);
+const jsLikeParsers = new Set([
+	"babel",
+	"babel-ts",
+	"typescript",
+	"acorn",
+	"flow",
+	"meriyah",
+]);
 const cssParsers = new Set(["css", "scss", "less"]);
-const singleQuoteFriendly = new Set([...jsLikeParsers, ...cssParsers, "markdown", "mdx", "yaml"]);
+const singleQuoteFriendly = new Set([
+	...jsLikeParsers,
+	...cssParsers,
+	"markdown",
+	"mdx",
+	"yaml",
+]);
 
 const visibility = computed(() => ({
-  supportsSemicolons: jsLikeParsers.has(selectedParser.value),
-  supportsTrailingComma:
-    jsLikeParsers.has(selectedParser.value) || selectedParser.value === "graphql",
-  supportsSingleQuote: singleQuoteFriendly.has(selectedParser.value),
+	supportsSemicolons: jsLikeParsers.has(selectedParser.value),
+	supportsTrailingComma:
+		jsLikeParsers.has(selectedParser.value) ||
+		selectedParser.value === "graphql",
+	supportsSingleQuote: singleQuoteFriendly.has(selectedParser.value),
 }));
 
 let formatRunId = 0;
 const formatNow = async () => {
-  const currentRun = ++formatRunId;
-  error.value = "";
+	const currentRun = ++formatRunId;
+	error.value = "";
 
-  if (!input.value) {
-    formatted.value = "";
-    return;
-  }
+	if (!input.value) {
+		formatted.value = "";
+		return;
+	}
 
-  try {
-    const result = await prettier.format(input.value, {
-      parser: selectedParser.value,
-      plugins,
-      semi: useSemi.value,
-      singleQuote: singleQuote.value,
-      tabWidth: tabWidth.value,
-      printWidth: printWidth.value,
-      trailingComma: trailingComma.value,
-    });
+	try {
+		const result = await prettier.format(input.value, {
+			parser: selectedParser.value,
+			plugins,
+			semi: useSemi.value,
+			singleQuote: singleQuote.value,
+			tabWidth: tabWidth.value,
+			printWidth: printWidth.value,
+			trailingComma: trailingComma.value,
+		});
 
-    if (currentRun === formatRunId) {
-      formatted.value = result;
-    }
-  } catch (err) {
-    if (currentRun === formatRunId) {
-      error.value = err instanceof Error ? err.message : "Failed to format code.";
-    }
-  }
+		if (currentRun === formatRunId) {
+			formatted.value = result;
+		}
+	} catch (err) {
+		if (currentRun === formatRunId) {
+			error.value =
+				err instanceof Error ? err.message : "Failed to format code.";
+		}
+	}
 };
 
 const copyOutput = async () => {
-  if (!formatted.value) return;
-  await navigator.clipboard.writeText(formatted.value);
+	if (!formatted.value) return;
+	await navigator.clipboard.writeText(formatted.value);
 };
 
 watch(
-  [input, selectedParser, printWidth, tabWidth, useSemi, singleQuote, trailingComma],
-  () => {
-    void formatNow();
-  },
-  { immediate: true },
+	[
+		input,
+		selectedParser,
+		printWidth,
+		tabWidth,
+		useSemi,
+		singleQuote,
+		trailingComma,
+	],
+	() => {
+		void formatNow();
+	},
+	{ immediate: true },
 );
 </script>

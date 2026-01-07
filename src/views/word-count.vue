@@ -1,33 +1,33 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import ToolHeader from "../components/ToolHeader.vue";
-import ToolCard from "../components/ToolCard.vue";
 import MonospaceEditor from "../components/MonospaceEditor.vue";
+import ToolCard from "../components/ToolCard.vue";
+import ToolHeader from "../components/ToolHeader.vue";
 
 const input = ref(
-  "The quick brown fox jumps over the lazy dog.\n\nVue.js is an approachable, performant, and versatile framework for building web user interfaces.",
+	"The quick brown fox jumps over the lazy dog.\n\nVue.js is an approachable, performant, and versatile framework for building web user interfaces.",
 );
 
 const countGraphemeClusters = (text: string) => {
-  const segmenter = new Intl.Segmenter("en", {
-    granularity: "grapheme",
-  });
-  const segments = segmenter.segment(text);
-  return Array.from(segments).length;
+	const segmenter = new Intl.Segmenter("en", {
+		granularity: "grapheme",
+	});
+	const segments = segmenter.segment(text);
+	return Array.from(segments).length;
 };
 
 const countWords = (text: string) => {
-  const segmenter = new Intl.Segmenter("en", {
-    granularity: "word",
-  });
-  const segments = segmenter.segment(text);
-  let wordCount = 0;
-  for (const { isWordLike } of segments) {
-    if (isWordLike) {
-      wordCount++;
-    }
-  }
-  return wordCount;
+	const segmenter = new Intl.Segmenter("en", {
+		granularity: "word",
+	});
+	const segments = segmenter.segment(text);
+	let wordCount = 0;
+	for (const { isWordLike } of segments) {
+		if (isWordLike) {
+			wordCount++;
+		}
+	}
+	return wordCount;
 };
 
 const graphemeCount = computed(() => countGraphemeClusters(input.value));

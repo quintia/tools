@@ -1,10 +1,10 @@
 <script setup lang="ts">
 defineProps<{
-  modelValue: string;
-  readonly?: boolean;
-  placeholder?: string;
-  rows?: number | string;
-  bgLight?: boolean;
+	modelValue: string;
+	readonly?: boolean;
+	placeholder?: string;
+	rows?: number | string;
+	bgLight?: boolean;
 }>();
 
 defineEmits(["update:modelValue"]);

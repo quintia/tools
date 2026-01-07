@@ -1,8 +1,8 @@
 <script setup lang="ts">
 defineProps<{
-  href: string | null;
-  filename: string;
-  label?: string;
+	href: string | null;
+	filename: string;
+	label?: string;
 }>();
 </script>
 

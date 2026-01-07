@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
 import * as Comlink from "comlink";
-import type { TesseractWorker } from "../workers/tesseract-worker";
-import type { MupdfWorker } from "../workers/mupdf-worker";
-import PdfViewer from "../components/PdfViewer.vue";
-import ToolHeader from "../components/ToolHeader.vue";
-import ToolCard from "../components/ToolCard.vue";
+import { onMounted, onUnmounted, ref } from "vue";
 import CopyButton from "../components/CopyButton.vue";
 import FilePicker from "../components/FilePicker.vue";
 import MonospaceEditor from "../components/MonospaceEditor.vue";
+import PdfViewer from "../components/PdfViewer.vue";
+import ToolCard from "../components/ToolCard.vue";
+import ToolHeader from "../components/ToolHeader.vue";
+import type { MupdfWorker } from "../workers/mupdf-worker";
+import type { TesseractWorker } from "../workers/tesseract-worker";
 
 const image = ref<string | null>(null);
 const fileData = ref<Uint8Array | null>(null);
@@ -20,51 +20,51 @@ const isProcessing = ref(false);
 const language = ref("eng");
 
 const supportedLanguages = [
-  { code: "amh", name: "Amharic" },
-  { code: "ara", name: "Arabic" },
-  { code: "ben", name: "Bengali" },
-  { code: "mya", name: "Burmese" },
-  { code: "chi_sim", name: "Chinese - Simplified" },
-  { code: "ces", name: "Czech" },
-  { code: "dan", name: "Danish" },
-  { code: "nld", name: "Dutch" },
-  { code: "eng", name: "English" },
-  { code: "fas", name: "Persian" },
-  { code: "fin", name: "Finnish" },
-  { code: "fra", name: "French" },
-  { code: "deu", name: "German" },
-  { code: "ell", name: "Greek" },
-  { code: "guj", name: "Gujarati" },
-  { code: "heb", name: "Hebrew" },
-  { code: "hin", name: "Hindi" },
-  { code: "ind", name: "Indonesian" },
-  { code: "ita", name: "Italian" },
-  { code: "jpn", name: "Japanese" },
-  { code: "kan", name: "Kannada" },
-  { code: "khm", name: "Khmer" },
-  { code: "kor", name: "Korean" },
-  { code: "lao", name: "Lao" },
-  { code: "lat", name: "Latin" },
-  { code: "msa", name: "Malay" },
-  { code: "mal", name: "Malayalam" },
-  { code: "mar", name: "Marathi" },
-  { code: "nor", name: "Norwegian" },
-  { code: "pol", name: "Polish" },
-  { code: "por", name: "Portuguese" },
-  { code: "pan", name: "Punjabi" },
-  { code: "rus", name: "Russian" },
-  { code: "slk", name: "Slovak" },
-  { code: "spa", name: "Spanish" },
-  { code: "swa", name: "Swahili" },
-  { code: "swe", name: "Swedish" },
-  { code: "tgl", name: "Tagalog" },
-  { code: "tam", name: "Tamil" },
-  { code: "tel", name: "Telugu" },
-  { code: "tha", name: "Thai" },
-  { code: "tur", name: "Turkish" },
-  { code: "ukr", name: "Ukrainian" },
-  { code: "urd", name: "Urdu" },
-  { code: "vie", name: "Vietnamese" },
+	{ code: "amh", name: "Amharic" },
+	{ code: "ara", name: "Arabic" },
+	{ code: "ben", name: "Bengali" },
+	{ code: "mya", name: "Burmese" },
+	{ code: "chi_sim", name: "Chinese - Simplified" },
+	{ code: "ces", name: "Czech" },
+	{ code: "dan", name: "Danish" },
+	{ code: "nld", name: "Dutch" },
+	{ code: "eng", name: "English" },
+	{ code: "fas", name: "Persian" },
+	{ code: "fin", name: "Finnish" },
+	{ code: "fra", name: "French" },
+	{ code: "deu", name: "German" },
+	{ code: "ell", name: "Greek" },
+	{ code: "guj", name: "Gujarati" },
+	{ code: "heb", name: "Hebrew" },
+	{ code: "hin", name: "Hindi" },
+	{ code: "ind", name: "Indonesian" },
+	{ code: "ita", name: "Italian" },
+	{ code: "jpn", name: "Japanese" },
+	{ code: "kan", name: "Kannada" },
+	{ code: "khm", name: "Khmer" },
+	{ code: "kor", name: "Korean" },
+	{ code: "lao", name: "Lao" },
+	{ code: "lat", name: "Latin" },
+	{ code: "msa", name: "Malay" },
+	{ code: "mal", name: "Malayalam" },
+	{ code: "mar", name: "Marathi" },
+	{ code: "nor", name: "Norwegian" },
+	{ code: "pol", name: "Polish" },
+	{ code: "por", name: "Portuguese" },
+	{ code: "pan", name: "Punjabi" },
+	{ code: "rus", name: "Russian" },
+	{ code: "slk", name: "Slovak" },
+	{ code: "spa", name: "Spanish" },
+	{ code: "swa", name: "Swahili" },
+	{ code: "swe", name: "Swedish" },
+	{ code: "tgl", name: "Tagalog" },
+	{ code: "tam", name: "Tamil" },
+	{ code: "tel", name: "Telugu" },
+	{ code: "tha", name: "Thai" },
+	{ code: "tur", name: "Turkish" },
+	{ code: "ukr", name: "Ukrainian" },
+	{ code: "urd", name: "Urdu" },
+	{ code: "vie", name: "Vietnamese" },
 ];
 
 let tWorker: Worker | null = null;
@@ -73,120 +73,134 @@ let mWorker: Worker | null = null;
 let mApi: Comlink.Remote<MupdfWorker> | null = null;
 
 onMounted(() => {
-  tWorker = new Worker(new URL("../workers/tesseract-worker.ts", import.meta.url), {
-    type: "module",
-  });
-  tApi = Comlink.wrap<TesseractWorker>(tWorker);
-  mWorker = new Worker(new URL("../workers/mupdf-worker.ts", import.meta.url), { type: "module" });
-  mApi = Comlink.wrap<MupdfWorker>(mWorker);
+	tWorker = new Worker(
+		new URL("../workers/tesseract-worker.ts", import.meta.url),
+		{
+			type: "module",
+		},
+	);
+	tApi = Comlink.wrap<TesseractWorker>(tWorker);
+	mWorker = new Worker(new URL("../workers/mupdf-worker.ts", import.meta.url), {
+		type: "module",
+	});
+	mApi = Comlink.wrap<MupdfWorker>(mWorker);
 });
 
 onUnmounted(() => {
-  tWorker?.terminate();
-  mWorker?.terminate();
+	tWorker?.terminate();
+	mWorker?.terminate();
 });
 
-const calculatePdfProgress = (currentPage: number, totalPages: number, pageProgress: number) => {
-  if (totalPages <= 0) return 0;
-  return (currentPage + pageProgress) / totalPages;
+const calculatePdfProgress = (
+	currentPage: number,
+	totalPages: number,
+	pageProgress: number,
+) => {
+	if (totalPages <= 0) return 0;
+	return (currentPage + pageProgress) / totalPages;
 };
 
 const formatOcrResult = (pages: { pageNumber: number; text: string }[]) => {
-  return pages
-    .map((p) => `--- Page ${p.pageNumber} ---\n${p.text}\n\n`)
-    .join("")
-    .trim();
+	return pages
+		.map((p) => `--- Page ${p.pageNumber} ---\n${p.text}\n\n`)
+		.join("")
+		.trim();
 };
 
 const handleFileChange = (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  const file = target.files?.[0];
-  if (file) {
-    fileType.value = file.type;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const arrayBuffer = e.target?.result as ArrayBuffer;
-      fileData.value = new Uint8Array(arrayBuffer);
+	const target = event.target as HTMLInputElement;
+	const file = target.files?.[0];
+	if (file) {
+		fileType.value = file.type;
+		const reader = new FileReader();
+		reader.onload = (e) => {
+			const arrayBuffer = e.target?.result as ArrayBuffer;
+			fileData.value = new Uint8Array(arrayBuffer);
 
-      if (file.type === "application/pdf") {
-        image.value = null;
-        status.value = "PDF Loaded. Ready to recognize.";
-      } else {
-        const blob = new Blob([fileData.value as any], { type: file.type });
-        image.value = URL.createObjectURL(blob);
-        status.value = "Image Loaded. Ready to recognize.";
-      }
-      result.value = "";
-      progress.value = 0;
-    };
-    reader.readAsArrayBuffer(file);
-  }
+			if (file.type === "application/pdf") {
+				image.value = null;
+				status.value = "PDF Loaded. Ready to recognize.";
+			} else {
+				const blob = new Blob([fileData.value as BlobPart], {
+					type: file.type,
+				});
+				image.value = URL.createObjectURL(blob);
+				status.value = "Image Loaded. Ready to recognize.";
+			}
+			result.value = "";
+			progress.value = 0;
+		};
+		reader.readAsArrayBuffer(file);
+	}
 };
 
 const recognizeText = async () => {
-  if (!fileData.value || !tApi || !mApi) return;
+	if (!fileData.value || !tApi || !mApi) return;
 
-  isProcessing.value = true;
-  result.value = "";
-  progress.value = 0;
-  status.value = "Initializing...";
+	isProcessing.value = true;
+	result.value = "";
+	progress.value = 0;
+	status.value = "Initializing...";
 
-  try {
-    if (fileType.value === "application/pdf") {
-      const totalPages = await mApi.getPageCount(fileData.value);
-      const pages: { pageNumber: number; text: string }[] = [];
+	try {
+		if (fileType.value === "application/pdf") {
+			const totalPages = await mApi.getPageCount(fileData.value);
+			const pages: { pageNumber: number; text: string }[] = [];
 
-      for (let i = 0; i < totalPages; i++) {
-        status.value = `Processing PDF page ${i + 1} of ${totalPages}...`;
-        const pageImg = await mApi.getPageAsImage(fileData.value, i);
+			for (let i = 0; i < totalPages; i++) {
+				status.value = `Processing PDF page ${i + 1} of ${totalPages}...`;
+				const pageImg = await mApi.getPageAsImage(fileData.value, i);
 
-        const canvas = document.createElement("canvas");
-        canvas.width = pageImg.width;
-        canvas.height = pageImg.height;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) continue;
-        const imageData = new ImageData(
-          new Uint8ClampedArray(pageImg.pixels),
-          pageImg.width,
-          pageImg.height,
-        );
-        ctx.putImageData(imageData, 0, 0);
-        const dataUrl = canvas.toDataURL("image/png");
+				const canvas = document.createElement("canvas");
+				canvas.width = pageImg.width;
+				canvas.height = pageImg.height;
+				const ctx = canvas.getContext("2d");
+				if (!ctx) continue;
+				const imageData = new ImageData(
+					new Uint8ClampedArray(pageImg.pixels),
+					pageImg.width,
+					pageImg.height,
+				);
+				ctx.putImageData(imageData, 0, 0);
+				const dataUrl = canvas.toDataURL("image/png");
 
-        const text = await tApi.recognize(
-          dataUrl,
-          language.value,
-          Comlink.proxy((m: any) => {
-            if (m.status === "recognizing text") {
-              progress.value = calculatePdfProgress(i, totalPages, m.progress);
-            }
-          }),
-        );
+				const text = await tApi.recognize(
+					dataUrl,
+					language.value,
+					Comlink.proxy((m: { status: string; progress: number }) => {
+						if (m.status === "recognizing text") {
+							progress.value = calculatePdfProgress(i, totalPages, m.progress);
+						}
+					}),
+				);
 
-        pages.push({ pageNumber: i + 1, text });
-      }
-      result.value = formatOcrResult(pages);
-    } else {
-      const text = await tApi.recognize(
-        image.value!,
-        language.value,
-        Comlink.proxy((m: any) => {
-          if (m.status === "recognizing text") {
-            progress.value = m.progress;
-          }
-          status.value = m.status;
-        }),
-      );
-      result.value = text;
-    }
-    status.value = "Recognition complete";
-    progress.value = 1;
-  } catch (error) {
-    console.error("OCR Error:", error);
-    status.value = "Error occurred during recognition";
-  } finally {
-    isProcessing.value = false;
-  }
+				pages.push({ pageNumber: i + 1, text });
+			}
+			result.value = formatOcrResult(pages);
+		} else {
+			const currentImage = image.value;
+			if (currentImage) {
+				const text = await tApi.recognize(
+					currentImage,
+					language.value,
+					Comlink.proxy((m: { status: string; progress: number }) => {
+						if (m.status === "recognizing text") {
+							progress.value = m.progress;
+						}
+						status.value = m.status;
+					}),
+				);
+				result.value = text;
+			}
+		}
+		status.value = "Recognition complete";
+		progress.value = 1;
+	} catch (error) {
+		console.error("OCR Error:", error);
+		status.value = "Error occurred during recognition";
+	} finally {
+		isProcessing.value = false;
+	}
 };
 </script>
 

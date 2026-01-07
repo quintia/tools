@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
 import * as Comlink from "comlink";
-import type { MupdfWorker } from "../workers/mupdf-worker";
-import PdfViewer from "../components/PdfViewer.vue";
-import ToolHeader from "../components/ToolHeader.vue";
-import ToolCard from "../components/ToolCard.vue";
+import { onMounted, onUnmounted, ref } from "vue";
 import DownloadLink from "../components/DownloadLink.vue";
 import FilePicker from "../components/FilePicker.vue";
+import PdfViewer from "../components/PdfViewer.vue";
+import ToolCard from "../components/ToolCard.vue";
+import ToolHeader from "../components/ToolHeader.vue";
+import type { MupdfWorker } from "../workers/mupdf-worker";
 
 const fileData = ref<Uint8Array | null>(null);
 const fileName = ref<string | null>(null);
@@ -18,74 +18,76 @@ let worker: Worker | null = null;
 let api: Comlink.Remote<MupdfWorker> | null = null;
 
 onMounted(() => {
-  worker = new Worker(new URL("../workers/mupdf-worker.ts", import.meta.url), { type: "module" });
-  api = Comlink.wrap<MupdfWorker>(worker);
+	worker = new Worker(new URL("../workers/mupdf-worker.ts", import.meta.url), {
+		type: "module",
+	});
+	api = Comlink.wrap<MupdfWorker>(worker);
 });
 
 onUnmounted(() => {
-  worker?.terminate();
+	worker?.terminate();
 });
 
 const handleFileChange = (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  const file = target.files?.[0];
-  if (file && file.type === "application/pdf") {
-    fileName.value = file.name;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const arrayBuffer = e.target?.result as ArrayBuffer;
-      fileData.value = new Uint8Array(arrayBuffer);
-      downloadUrl.value = null;
-    };
-    reader.readAsArrayBuffer(file);
-  }
+	const target = event.target as HTMLInputElement;
+	const file = target.files?.[0];
+	if (file && file.type === "application/pdf") {
+		fileName.value = file.name;
+		const reader = new FileReader();
+		reader.onload = (e) => {
+			const arrayBuffer = e.target?.result as ArrayBuffer;
+			fileData.value = new Uint8Array(arrayBuffer);
+			downloadUrl.value = null;
+		};
+		reader.readAsArrayBuffer(file);
+	}
 };
 
 const parsePageRanges = (rangeStr: string, maxPages: number): number[] => {
-  const pages = new Set<number>();
-  const parts = rangeStr.split(",");
+	const pages = new Set<number>();
+	const parts = rangeStr.split(",");
 
-  for (let part of parts) {
-    part = part.trim();
-    if (part.includes("-")) {
-      const [start, end] = part.split("-").map((s) => parseInt(s.trim()));
-      if (!isNaN(start) && !isNaN(end)) {
-        for (let i = Math.min(start, end); i <= Math.max(start, end); i++) {
-          if (i > 0 && i <= maxPages) pages.add(i - 1); // 0-based index
-        }
-      }
-    } else {
-      const page = parseInt(part);
-      if (!isNaN(page) && page > 0 && page <= maxPages) {
-        pages.add(page - 1);
-      }
-    }
-  }
-  return Array.from(pages).sort((a, b) => a - b);
+	for (let part of parts) {
+		part = part.trim();
+		if (part.includes("-")) {
+			const [start, end] = part.split("-").map((s) => parseInt(s.trim(), 10));
+			if (!Number.isNaN(start) && !Number.isNaN(end)) {
+				for (let i = Math.min(start, end); i <= Math.max(start, end); i++) {
+					if (i > 0 && i <= maxPages) pages.add(i - 1); // 0-based index
+				}
+			}
+		} else {
+			const page = parseInt(part, 10);
+			if (!Number.isNaN(page) && page > 0 && page <= maxPages) {
+				pages.add(page - 1);
+			}
+		}
+	}
+	return Array.from(pages).sort((a, b) => a - b);
 };
 
 const extractPages = async () => {
-  if (!fileData.value || !api) return;
+	if (!fileData.value || !api) return;
 
-  isProcessing.value = true;
-  try {
-    const totalPages = await api.getPageCount(fileData.value);
-    const selectedIndices = parsePageRanges(pageRange.value, totalPages);
+	isProcessing.value = true;
+	try {
+		const totalPages = await api.getPageCount(fileData.value);
+		const selectedIndices = parsePageRanges(pageRange.value, totalPages);
 
-    if (selectedIndices.length === 0) {
-      alert("Please enter valid page numbers.");
-      return;
-    }
+		if (selectedIndices.length === 0) {
+			alert("Please enter valid page numbers.");
+			return;
+		}
 
-    const result = await api.extractPages(fileData.value, selectedIndices);
-    const blob = new Blob([result as any], { type: "application/pdf" });
-    downloadUrl.value = URL.createObjectURL(blob);
-  } catch (error) {
-    console.error("PDF Extraction Error:", error);
-    alert("An error occurred during extraction.");
-  } finally {
-    isProcessing.value = false;
-  }
+		const result = await api.extractPages(fileData.value, selectedIndices);
+		const blob = new Blob([result as BlobPart], { type: "application/pdf" });
+		downloadUrl.value = URL.createObjectURL(blob);
+	} catch (error) {
+		console.error("PDF Extraction Error:", error);
+		alert("An error occurred during extraction.");
+	} finally {
+		isProcessing.value = false;
+	}
 };
 </script>
 

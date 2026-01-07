@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import ToolHeader from "../components/ToolHeader.vue";
-import ToolCard from "../components/ToolCard.vue";
 import DownloadLink from "../components/DownloadLink.vue";
 import FilePicker from "../components/FilePicker.vue";
 import MonospaceEditor from "../components/MonospaceEditor.vue";
+import ToolCard from "../components/ToolCard.vue";
+import ToolHeader from "../components/ToolHeader.vue";
 
 const x = ref(300);
 const y = ref(300);
 const svg = ref("");
 const png = ref("");
-const raw = ref(`<svg width="300" height="300" xmlns="http://www.w3.org/2000/svg">
+const raw =
+	ref(`<svg width="300" height="300" xmlns="http://www.w3.org/2000/svg">
   <rect x="50" y="50" width="200" height="200" fill="skyblue" rx="20" />
   <circle cx="150" cy="150" r="80" fill="orange" />
   <text x="150" y="160" font-size="24" text-anchor="middle" fill="white" font-family="sans-serif">SVG</text>
@@ -18,50 +19,50 @@ const raw = ref(`<svg width="300" height="300" xmlns="http://www.w3.org/2000/svg
 
 // Watch raw and update svg preview
 watch(
-  raw,
-  (newRaw) => {
-    svg.value = `data:image/svg+xml,${encodeURIComponent(newRaw)}`;
-  },
-  { immediate: true },
+	raw,
+	(newRaw) => {
+		svg.value = `data:image/svg+xml,${encodeURIComponent(newRaw)}`;
+	},
+	{ immediate: true },
 );
 
 const handleClick = async () => {
-  const canvas = document.createElement("canvas");
-  canvas.width = x.value;
-  canvas.height = y.value;
-  const context = canvas.getContext("2d");
-  if (!context) return;
+	const canvas = document.createElement("canvas");
+	canvas.width = x.value;
+	canvas.height = y.value;
+	const context = canvas.getContext("2d");
+	if (!context) return;
 
-  const img = new Image();
-  const svgBlob = new Blob([raw.value], {
-    type: "image/svg+xml;charset=utf-8",
-  });
-  const url = URL.createObjectURL(svgBlob);
+	const img = new Image();
+	const svgBlob = new Blob([raw.value], {
+		type: "image/svg+xml;charset=utf-8",
+	});
+	const url = URL.createObjectURL(svgBlob);
 
-  try {
-    await new Promise<void>((resolve, reject) => {
-      img.onload = () => {
-        context.drawImage(img, 0, 0, x.value, y.value);
-        URL.revokeObjectURL(url);
-        resolve();
-      };
-      img.onerror = reject;
-      img.src = url;
-    });
+	try {
+		await new Promise<void>((resolve, reject) => {
+			img.onload = () => {
+				context.drawImage(img, 0, 0, x.value, y.value);
+				URL.revokeObjectURL(url);
+				resolve();
+			};
+			img.onerror = reject;
+			img.src = url;
+		});
 
-    png.value = canvas.toDataURL();
-  } catch (error) {
-    console.error("Conversion failed", error);
-    URL.revokeObjectURL(url);
-  }
+		png.value = canvas.toDataURL();
+	} catch (error) {
+		console.error("Conversion failed", error);
+		URL.revokeObjectURL(url);
+	}
 };
 
 const handleChange = async (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  const file = target.files?.[0];
-  if (!file) return;
-  const rawText = await file.text();
-  raw.value = rawText;
+	const target = event.target as HTMLInputElement;
+	const file = target.files?.[0];
+	if (!file) return;
+	const rawText = await file.text();
+	raw.value = rawText;
 };
 </script>
 
