@@ -171,6 +171,14 @@ export const tools: Tool[] = [
 		category: "Graphics & Images",
 	},
 	{
+		path: "/graphviz",
+		name: "Graphviz",
+		icon: "🕸️",
+		description: "Generate diagrams from Graphviz DOT syntax.",
+		component: () => import("./views/graphviz.vue"),
+		category: "Graphics & Images",
+	},
+	{
 		path: "/bg-remover",
 		name: "BG Remover",
 		icon: "✂️",
