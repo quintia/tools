@@ -6,6 +6,7 @@ import PdfViewer from "../components/PdfViewer.vue";
 import ToolCard from "../components/ToolCard.vue";
 import ToolHeader from "../components/ToolHeader.vue";
 import type { MupdfWorker } from "../workers/mupdf-worker";
+import MupdfWorkerClass from "../workers/mupdf-worker?worker";
 
 interface FontUsage {
 	name: string;
@@ -26,9 +27,7 @@ let worker: Worker | null = null;
 let api: Comlink.Remote<MupdfWorker> | null = null;
 
 onMounted(() => {
-	worker = new Worker(new URL("../workers/mupdf-worker.ts", import.meta.url), {
-		type: "module",
-	});
+	worker = new MupdfWorkerClass();
 	api = Comlink.wrap<MupdfWorker>(worker);
 });
 

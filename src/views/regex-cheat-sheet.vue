@@ -160,8 +160,7 @@ const examples = [
 const caveats = [
 	"Oniguruma's flag 'm' means dot-all, unlike JavaScript's multiline.",
 	"Unicode is default for \\d, \\w, \\s unless you enable ASCII flags (D/S/W).",
-	"Some advanced features depend on target support when transpiled to JavaScript.",
-	"Using oniguruma-to-es, patterns may be emulated with a RegExp subclass.",
+	"All patterns are executed using the native Oniguruma engine (WASM).",
 ];
 </script>
 
@@ -169,7 +168,7 @@ const caveats = [
   <div>
     <ToolHeader
       title="Regex Cheat Sheet"
-      description="A practical reference of Oniguruma syntax, flags, and key differences when using oniguruma-to-es in the browser."
+      description="A practical reference of Oniguruma syntax and flags."
     />
 
     <ToolCard title="Quick Start" class="mb-4">
@@ -244,8 +243,8 @@ const caveats = [
         >
           Official Oniguruma Syntax Reference
         </a>
-        <a href="https://github.com/slevithan/oniguruma-to-es" target="_blank" rel="noreferrer">
-          oniguruma-to-es documentation
+        <a href="https://github.com/microsoft/vscode-oniguruma" target="_blank" rel="noreferrer">
+          vscode-oniguruma documentation
         </a>
       </div>
     </ToolCard>

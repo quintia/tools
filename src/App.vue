@@ -56,30 +56,36 @@
 </template>
 
 <script setup lang="ts">
-import { tools } from "./tools";
 import { computed } from "vue";
+import { tools } from "./tools";
 
 const groupedTools = computed(() => {
-  const groups = new Map<string, typeof tools>();
-  const order = ["Text & Coding", "Math & LaTeX", "Graphics & Images", "PDF Tools", "Utilities"];
+	const groups = new Map<string, typeof tools>();
+	const order = [
+		"Text & Coding",
+		"Math & LaTeX",
+		"Graphics & Images",
+		"PDF Tools",
+		"Utilities",
+	];
 
-  for (const cat of order) {
-    groups.set(cat, []);
-  }
+	for (const cat of order) {
+		groups.set(cat, []);
+	}
 
-  for (const tool of tools) {
-    if (!groups.has(tool.category)) {
-      groups.set(tool.category, []);
-    }
-    groups.get(tool.category)?.push(tool);
-  }
+	for (const tool of tools) {
+		if (!groups.has(tool.category)) {
+			groups.set(tool.category, []);
+		}
+		groups.get(tool.category)?.push(tool);
+	}
 
-  return Array.from(groups.entries())
-    .filter(([_, items]) => items.length > 0)
-    .map(([category, items]) => ({
-      category,
-      items,
-    }));
+	return Array.from(groups.entries())
+		.filter(([_, items]) => items.length > 0)
+		.map(([category, items]) => ({
+			category,
+			items,
+		}));
 });
 </script>
 

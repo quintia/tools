@@ -1,14 +1,15 @@
 <script setup lang="ts">
+import * as Comlink from "comlink";
 import { onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { Cropper } from "vue-advanced-cropper";
 import "vue-advanced-cropper/dist/style.css";
-import * as Comlink from "comlink";
 import DownloadLink from "../components/DownloadLink.vue";
 import FilePicker from "../components/FilePicker.vue";
 import LoadingOverlay from "../components/LoadingOverlay.vue";
 import ToolCard from "../components/ToolCard.vue";
 import ToolHeader from "../components/ToolHeader.vue";
 import type { OpencvWorker } from "../workers/opencv-worker";
+import OpencvWorkerClass from "../workers/opencv-worker?worker";
 
 const sourceImageUrl = ref<string | null>(null);
 const resultImageUrl = ref<string | null>(null);
@@ -29,9 +30,7 @@ let worker: Worker | null = null;
 let api: Comlink.Remote<OpencvWorker> | null = null;
 
 onMounted(() => {
-	worker = new Worker(new URL("../workers/opencv-worker.ts", import.meta.url), {
-		type: "module",
-	});
+	worker = new OpencvWorkerClass();
 	api = Comlink.wrap<OpencvWorker>(worker);
 	isOpenCvReady.value = true;
 });

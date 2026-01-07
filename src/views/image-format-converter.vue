@@ -12,7 +12,9 @@ import type {
 	FormatOption,
 	ImagemagickWorker,
 } from "../workers/imagemagick-worker";
+import ImagemagickWorkerClass from "../workers/imagemagick-worker?worker";
 import type { MupdfWorker } from "../workers/mupdf-worker";
+import MupdfWorkerClass from "../workers/mupdf-worker?worker";
 
 const availableFormats = ref<FormatOption[]>([]);
 const targetFormat = ref<MagickFormat | null>(null);
@@ -46,17 +48,9 @@ let muWorker: Worker | null = null;
 let muApi: Comlink.Remote<MupdfWorker> | null = null;
 
 onMounted(async () => {
-	imWorker = new Worker(
-		new URL("../workers/imagemagick-worker.ts", import.meta.url),
-		{
-			type: "module",
-		},
-	);
+	imWorker = new ImagemagickWorkerClass();
 	imApi = Comlink.wrap<ImagemagickWorker>(imWorker);
-	muWorker = new Worker(
-		new URL("../workers/mupdf-worker.ts", import.meta.url),
-		{ type: "module" },
-	);
+	muWorker = new MupdfWorkerClass();
 	muApi = Comlink.wrap<MupdfWorker>(muWorker);
 	await loadFormats();
 });

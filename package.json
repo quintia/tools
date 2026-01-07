@@ -28,7 +28,6 @@
 		"mathxyjax3": "^0.8.3",
 		"mermaid": "^11.12.2",
 		"mupdf": "^1.26.4",
-		"oniguruma-to-es": "^4.3.4",
 		"prettier": "^3.7.4",
 		"shiki": "^3.20.0",
 		"sortablejs": "^1.15.6",

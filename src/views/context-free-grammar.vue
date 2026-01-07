@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { loadWASM, OnigScanner, OnigString } from "vscode-oniguruma";
-import onigWasm from "vscode-oniguruma/release/onig.wasm?url";
-import { computed, onMounted, ref } from "vue";
+import * as Comlink from "comlink";
+import { computed, onMounted, ref, watch } from "vue";
 import CopyButton from "../components/CopyButton.vue";
 import MonospaceEditor from "../components/MonospaceEditor.vue";
 import ToolCard from "../components/ToolCard.vue";
 import ToolHeader from "../components/ToolHeader.vue";
+import type { OnigurumaWorker } from "../workers/oniguruma-worker";
+import OnigurumaWorkerClass from "../workers/oniguruma-worker?worker";
 
 type Production = string[];
 
@@ -23,16 +24,13 @@ type ParseResult = {
 
 const epsilonTokens = new Set(["ε", "epsilon", "eps", "EPS", "lambda", "Λ"]);
 
-const isWasmReady = ref(false);
+const worker = ref<Comlink.Remote<OnigurumaWorker> | null>(null);
+const isWorkerReady = ref(false);
 
-onMounted(async () => {
-	try {
-		const response = await fetch(onigWasm);
-		await loadWASM(response);
-		isWasmReady.value = true;
-	} catch (err) {
-		console.error("Failed to load Oniguruma WASM:", err);
-	}
+onMounted(() => {
+	const w = new OnigurumaWorkerClass();
+	worker.value = Comlink.wrap<OnigurumaWorker>(w);
+	isWorkerReady.value = true;
 });
 
 function normalizeSymbol(symbol: string): string {
@@ -619,59 +617,6 @@ function getGrammarSummary(grammar: Grammar): string {
 
 type MatchSegment = { start: number; end: number; value: string };
 
-function compileOnigurumaRegex(
-	pattern: string,
-	options: { flags?: string } = {},
-) {
-	if (pattern.trim() === "" || !isWasmReady.value)
-		return { compiled: null, error: null };
-	const rawFlags = options.flags?.replace(/\s+/g, "").trim() || "";
-	const finalPattern = rawFlags ? `(?${rawFlags})${pattern}` : pattern;
-
-	try {
-		const scanner = new OnigScanner([finalPattern]);
-		return { compiled: scanner, error: null };
-	} catch (error) {
-		return {
-			compiled: null,
-			error: error instanceof Error ? error.message : String(error),
-		};
-	}
-}
-
-function findMatches(text: string, scanner: OnigScanner, maxMatches: number) {
-	const safeLimit = Number.isFinite(maxMatches)
-		? Math.max(0, Math.floor(maxMatches))
-		: 0;
-	if (safeLimit === 0) return { matches: [], truncated: false };
-
-	const onigString = new OnigString(text);
-	const matches: MatchSegment[] = [];
-	let truncated = false;
-	let position = 0;
-
-	while (position <= text.length) {
-		const match = scanner.findNextMatchSync(onigString, position);
-		if (!match) break;
-
-		const start = match.captureIndices[0].start;
-		const end = match.captureIndices[0].end;
-
-		matches.push({ start, end, value: text.slice(start, end) });
-
-		if (matches.length >= safeLimit) {
-			truncated = true;
-			break;
-		}
-
-		position = end;
-		if (start === end) {
-			position++;
-		}
-	}
-	return { matches, truncated };
-}
-
 function escapeHtml(value: string): string {
 	return value
 		.replaceAll("&", "&amp;")
@@ -739,22 +684,45 @@ const onigurumaPattern = computed(() => {
 	return buildOnigurumaRegex(grammarGNF.value);
 });
 
-const compileResult = computed(() =>
-	compileOnigurumaRegex(onigurumaPattern.value, {
-		flags: flags.value,
-	}),
-);
-
-const matchesResult = computed(() => {
-	if (!compileResult.value.compiled) {
-		return { matches: [], truncated: false };
-	}
-	return findMatches(
-		exampleText.value,
-		compileResult.value.compiled,
-		maxMatches.value,
-	);
+const matchesResult = ref<{ matches: MatchSegment[]; truncated: boolean }>({
+	matches: [],
+	truncated: false,
 });
+const error = ref<string | null>(null);
+const isProcessing = ref(false);
+
+watch(
+	[onigurumaPattern, flags, exampleText, maxMatches, isWorkerReady],
+	async () => {
+		if (!isWorkerReady.value || !worker.value) return;
+		if (!onigurumaPattern.value.trim()) {
+			matchesResult.value = { matches: [], truncated: false };
+			error.value = null;
+			return;
+		}
+
+		isProcessing.value = true;
+		try {
+			const result = await worker.value.findMatches(
+				exampleText.value,
+				onigurumaPattern.value,
+				flags.value,
+				maxMatches.value,
+			);
+			matchesResult.value = {
+				matches: result.matches,
+				truncated: result.truncated,
+			};
+			error.value = result.error || null;
+		} catch (e) {
+			error.value = String(e);
+			matchesResult.value = { matches: [], truncated: false };
+		} finally {
+			isProcessing.value = false;
+		}
+	},
+	{ immediate: true },
+);
 
 const highlightedHtml = computed(() =>
 	buildHighlightedHtml(exampleText.value, matchesResult.value.matches),
@@ -764,10 +732,10 @@ const matchSummary = computed(() => {
 	if (!onigurumaPattern.value.trim()) {
 		return "Enter grammar to generate a regex";
 	}
-	if (!isWasmReady.value) {
+	if (!isWorkerReady.value) {
 		return "Loading Oniguruma WASM...";
 	}
-	if (compileResult.value.error) {
+	if (error.value) {
 		return "Invalid Oniguruma pattern";
 	}
 	const count = matchesResult.value.matches.length;
@@ -874,8 +842,8 @@ const matchSummary = computed(() => {
             <CopyButton :content="onigurumaPattern" />
           </template>
           <MonospaceEditor :model-value="onigurumaPattern" bg-light readonly :rows="10" />
-          <div v-if="compileResult.error" class="alert alert-danger m-3 mb-0">
-            {{ compileResult.error }}
+          <div v-if="error" class="alert alert-danger m-3 mb-0">
+            {{ error }}
           </div>
         </ToolCard>
       </div>

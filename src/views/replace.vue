@@ -1,60 +1,23 @@
 <script setup lang="ts">
 import { generateDiffFile } from "@git-diff-view/file";
 import { DiffModeEnum, DiffView } from "@git-diff-view/vue";
-import {
-	EmulatedRegExp,
-	type ToRegExpOptions,
-	toRegExpDetails,
-} from "oniguruma-to-es";
-import { computed, ref } from "vue";
+import * as Comlink from "comlink";
+import { computed, onMounted, ref, watch } from "vue";
 import CopyButton from "../components/CopyButton.vue";
 import MonospaceEditor from "../components/MonospaceEditor.vue";
 import ToolCard from "../components/ToolCard.vue";
 import ToolHeader from "../components/ToolHeader.vue";
+import type { OnigurumaWorker } from "../workers/oniguruma-worker";
+import OnigurumaWorkerClass from "../workers/oniguruma-worker?worker";
 
-type CompiledOniguruma = ReturnType<typeof toRegExpDetails>;
+const worker = ref<Comlink.Remote<OnigurumaWorker> | null>(null);
+const isWorkerReady = ref(false);
 
-function compileOnigurumaRegex(
-	pattern: string,
-	options: { flags?: string; target?: string } = {},
-) {
-	if (pattern.trim() === "") return { compiled: null, error: null };
-	const rawFlags = options.flags?.replace(/\s+/g, "").trim();
-	const toRegExpOptions: ToRegExpOptions = {
-		global: true,
-		target: (options.target as ToRegExpOptions["target"]) ?? "auto",
-	};
-	if (rawFlags) toRegExpOptions.flags = rawFlags;
-	try {
-		const details = toRegExpDetails(pattern, toRegExpOptions);
-		return { compiled: details, error: null };
-	} catch (error) {
-		return {
-			compiled: null,
-			error: error instanceof Error ? error.message : String(error),
-		};
-	}
-}
-
-function createOnigurumaRegExp(compiled: CompiledOniguruma): RegExp {
-	if (compiled.options) {
-		return new EmulatedRegExp(
-			compiled.pattern,
-			compiled.flags,
-			compiled.options,
-		);
-	}
-	return new RegExp(compiled.pattern, compiled.flags);
-}
-
-function replaceMatches(
-	text: string,
-	compiled: CompiledOniguruma,
-	replacement: string,
-): string {
-	const regex = createOnigurumaRegExp(compiled);
-	return text.replace(regex, replacement);
-}
+onMounted(() => {
+	const w = new OnigurumaWorkerClass();
+	worker.value = Comlink.wrap<OnigurumaWorker>(w);
+	isWorkerReady.value = true;
+});
 
 const text = ref(
 	"The year is 2025. The next year will be 2026. My favorite numbers are 7 and 42.",
@@ -63,22 +26,43 @@ const replaceText = ref("[year]");
 const search = ref("\\d{4}");
 const flags = ref("");
 
-const compileResult = computed(() =>
-	compileOnigurumaRegex(search.value, { flags: flags.value, target: "auto" }),
-);
+const result = ref("");
+const error = ref<string | null>(null);
+const isProcessing = ref(false);
 
-const result = computed(() => {
-	try {
-		if (!search.value || !compileResult.value.compiled) return text.value;
-		return replaceMatches(
-			text.value,
-			compileResult.value.compiled,
-			replaceText.value,
-		);
-	} catch {
-		return text.value;
-	}
-});
+watch(
+	[text, replaceText, search, flags, isWorkerReady],
+	async () => {
+		if (!isWorkerReady.value || !worker.value) {
+			result.value = text.value;
+			return;
+		}
+
+		if (!search.value) {
+			result.value = text.value;
+			error.value = null;
+			return;
+		}
+
+		isProcessing.value = true;
+		try {
+			const response = await worker.value.replace(
+				text.value,
+				search.value,
+				replaceText.value,
+				flags.value,
+			);
+			result.value = response.result;
+			error.value = response.error || null;
+		} catch (e) {
+			error.value = String(e);
+			result.value = text.value;
+		} finally {
+			isProcessing.value = false;
+		}
+	},
+	{ immediate: true },
+);
 
 const diffFile = computed(() => {
 	let oldText = (text.value || "").replace(/\r\n/g, "\n");
@@ -112,9 +96,9 @@ const diffFile = computed(() => {
       <div class="row g-3">
         <div class="col-md-6">
           <label for="search" class="form-label fw-bold small">Oniguruma Pattern</label>
-          <input id="search" v-model="search" class="form-control" placeholder="e.g., \d+" />
+          <input id="search" v-model="search" class="form-control" placeholder="e.g., \\d+" />
           <div class="form-text">
-            Supports Oniguruma syntax like <span class="font-monospace">\h</span> and inline
+            Supports Oniguruma syntax like <span class="font-monospace">\\h</span> and inline
             modifiers.
           </div>
         </div>
@@ -126,6 +110,7 @@ const diffFile = computed(() => {
             class="form-control"
             placeholder="e.g., [number]"
           />
+          <div class="form-text">Supports <span class="font-monospace">$1</span>, <span class="font-monospace">$2</span>, etc. for groups.</div>
         </div>
         <div class="col-md-6">
           <label for="flags" class="form-label fw-bold small">Flags</label>
@@ -133,21 +118,25 @@ const diffFile = computed(() => {
             id="flags"
             v-model="flags"
             class="form-control font-monospace"
-            placeholder="i, m, x, D, S, W, y{g}"
+            placeholder="i, m, x, D, S, W"
           />
+          <div class="form-text">Oniguruma flags (passed as <span class="font-monospace">(?flags)pattern</span>).</div>
         </div>
         <div class="col-md-6">
-          <label class="form-label fw-bold small">Compiled</label>
+          <label class="form-label fw-bold small">Preview</label>
           <div class="form-control font-monospace bg-light">
             {{
-              compileResult.compiled
-                ? `/${compileResult.compiled.pattern}/${compileResult.compiled.flags}`
+              search
+                ? `/${search}/${flags}`
                 : "—"
             }}
           </div>
         </div>
-        <div v-if="compileResult.error" class="col-12">
-          <div class="alert alert-danger mb-0">{{ compileResult.error }}</div>
+        <div v-if="!isWorkerReady" class="col-12">
+          <div class="alert alert-info mb-0">Loading Oniguruma (WASM)...</div>
+        </div>
+        <div v-else-if="error" class="col-12">
+          <div class="alert alert-danger mb-0">{{ error }}</div>
         </div>
       </div>
     </ToolCard>

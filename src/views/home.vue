@@ -33,32 +33,38 @@
 </template>
 
 <script setup lang="ts">
-import { tools } from "../tools";
 import { computed } from "vue";
+import { tools } from "../tools";
 
 const categories = computed(() => {
-  const categoryMap = new Map<string, typeof tools>();
+	const categoryMap = new Map<string, typeof tools>();
 
-  // Define order of categories
-  const order = ["Text & Coding", "Math & LaTeX", "Graphics & Images", "PDF Tools", "Utilities"];
+	// Define order of categories
+	const order = [
+		"Text & Coding",
+		"Math & LaTeX",
+		"Graphics & Images",
+		"PDF Tools",
+		"Utilities",
+	];
 
-  for (const cat of order) {
-    categoryMap.set(cat, []);
-  }
+	for (const cat of order) {
+		categoryMap.set(cat, []);
+	}
 
-  for (const tool of tools) {
-    if (!categoryMap.has(tool.category)) {
-      categoryMap.set(tool.category, []);
-    }
-    categoryMap.get(tool.category)?.push(tool);
-  }
+	for (const tool of tools) {
+		if (!categoryMap.has(tool.category)) {
+			categoryMap.set(tool.category, []);
+		}
+		categoryMap.get(tool.category)?.push(tool);
+	}
 
-  return Array.from(categoryMap.entries())
-    .filter(([_, items]) => items.length > 0)
-    .map(([title, items]) => ({
-      title,
-      items,
-    }));
+	return Array.from(categoryMap.entries())
+		.filter(([_, items]) => items.length > 0)
+		.map(([title, items]) => ({
+			title,
+			items,
+		}));
 });
 </script>
 

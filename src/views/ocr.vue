@@ -8,7 +8,9 @@ import PdfViewer from "../components/PdfViewer.vue";
 import ToolCard from "../components/ToolCard.vue";
 import ToolHeader from "../components/ToolHeader.vue";
 import type { MupdfWorker } from "../workers/mupdf-worker";
+import MupdfWorkerClass from "../workers/mupdf-worker?worker";
 import type { TesseractWorker } from "../workers/tesseract-worker";
+import TesseractWorkerClass from "../workers/tesseract-worker?worker";
 
 const image = ref<string | null>(null);
 const fileData = ref<Uint8Array | null>(null);
@@ -73,16 +75,9 @@ let mWorker: Worker | null = null;
 let mApi: Comlink.Remote<MupdfWorker> | null = null;
 
 onMounted(() => {
-	tWorker = new Worker(
-		new URL("../workers/tesseract-worker.ts", import.meta.url),
-		{
-			type: "module",
-		},
-	);
+	tWorker = new TesseractWorkerClass();
 	tApi = Comlink.wrap<TesseractWorker>(tWorker);
-	mWorker = new Worker(new URL("../workers/mupdf-worker.ts", import.meta.url), {
-		type: "module",
-	});
+	mWorker = new MupdfWorkerClass();
 	mApi = Comlink.wrap<MupdfWorker>(mWorker);
 });
 
