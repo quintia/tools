@@ -4,12 +4,8 @@ import {
 	Magick,
 	MagickFormat,
 } from "@imagemagick/magick-wasm";
+import wasmUrl from "@imagemagick/magick-wasm/magick.wasm?url";
 import * as Comlink from "comlink";
-
-const wasmUrl = new URL(
-	"../../node_modules/@imagemagick/magick-wasm/dist/magick.wasm",
-	import.meta.url,
-);
 
 export type FormatOption = {
 	format: MagickFormat;
