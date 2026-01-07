@@ -24,221 +24,23 @@
           <div class="col-lg-2 pt-3 border-end sidebar-container">
             <div class="collapse d-lg-block" id="sidebarMenu">
               <div class="list-group list-group-flush mb-3">
-                <div class="list-group-item fw-bold text-muted small text-uppercase bg-light">
-                  Text & Coding
-                </div>
-                <RouterLink
-                  class="list-group-item list-group-item-action"
-                  active-class="active"
-                  to="/replace"
-                >
-                  🔁 Replace
-                </RouterLink>
-                <RouterLink
-                  class="list-group-item list-group-item-action"
-                  active-class="active"
-                  to="/prettier"
-                >
-                  🎨 Prettier Formatter
-                </RouterLink>
-                <RouterLink
-                  class="list-group-item list-group-item-action"
-                  active-class="active"
-                  to="/diff"
-                >
-                  🔍 Diff
-                </RouterLink>
-                <RouterLink
-                  class="list-group-item list-group-item-action"
-                  active-class="active"
-                  to="/regex-finder"
-                >
-                  🧭 Regex Finder
-                </RouterLink>
-                <RouterLink
-                  class="list-group-item list-group-item-action"
-                  active-class="active"
-                  to="/regex-cheat-sheet"
-                >
-                  📚 Regex Cheat Sheet
-                </RouterLink>
-								<RouterLink
-                  class="list-group-item list-group-item-action"
-                  active-class="active"
-                  to="/context-free-grammar"
-                >
-              		📚 Context-Free Grammar
-                </RouterLink>
-                <RouterLink
-                  class="list-group-item list-group-item-action"
-                  active-class="active"
-                  to="/word-count"
-                >
-                  📝 Word Count
-                </RouterLink>
-                <RouterLink
-                  class="list-group-item list-group-item-action"
-                  active-class="active"
-                  to="/fold-strings"
-                >
-                  📂 Fold Strings
-                </RouterLink>
-                <RouterLink
-                  class="list-group-item list-group-item-action"
-                  active-class="active"
-                  to="/code-highlight"
-                >
-                  💡 Code Highlighter
-                </RouterLink>
-                <RouterLink
-                  class="list-group-item list-group-item-action"
-                  active-class="active"
-                  to="/encoding-converter"
-                >
-                  🔡 Encoding Converter
-                </RouterLink>
-
-                <div class="list-group-item fw-bold text-muted small text-uppercase bg-light mt-2">
-                  Math & LaTeX
-                </div>
-                <RouterLink
-                  class="list-group-item list-group-item-action"
-                  active-class="active"
-                  to="/unicode-latex"
-                >
-                  🔣 Unicode → LaTeX
-                </RouterLink>
-                <RouterLink
-                  class="list-group-item list-group-item-action"
-                  active-class="active"
-                  to="/latex-unicode"
-                >
-                  🧮 LaTeX → Unicode
-                </RouterLink>
-                <RouterLink
-                  class="list-group-item list-group-item-action"
-                  active-class="active"
-                  to="/math-preview"
-                >
-                  ♾️ Math Preview
-                </RouterLink>
-                <RouterLink
-                  class="list-group-item list-group-item-action"
-                  active-class="active"
-                  to="/statistics"
-                >
-                  📊 Statistics
-                </RouterLink>
-
-                <div class="list-group-item fw-bold text-muted small text-uppercase bg-light mt-2">
-                  Graphics & Images
-                </div>
-                <RouterLink
-                  class="list-group-item list-group-item-action"
-                  active-class="active"
-                  to="/image-resize"
-                >
-                  🖼️ Image Resize
-                </RouterLink>
-                <RouterLink
-                  class="list-group-item list-group-item-action"
-                  active-class="active"
-                  to="/image-format-converter"
-                >
-                  🔄 Image Format Converter
-                </RouterLink>
-                <RouterLink
-                  class="list-group-item list-group-item-action"
-                  active-class="active"
-                  to="/ocr"
-                >
-                  👁️ OCR
-                </RouterLink>
-                <RouterLink
-                  class="list-group-item list-group-item-action"
-                  active-class="active"
-                  to="/svg-png"
-                >
-                  🖼️ SVG → PNG
-                </RouterLink>
-                <RouterLink
-                  class="list-group-item list-group-item-action"
-                  active-class="active"
-                  to="/mermaid"
-                >
-                  🧜‍♀️ Mermaid
-                </RouterLink>
-                <RouterLink
-                  class="list-group-item list-group-item-action"
-                  active-class="active"
-                  to="/bg-remover"
-                >
-                  ✂️ BG Remover
-                </RouterLink>
-
-                <div class="list-group-item fw-bold text-muted small text-uppercase bg-light mt-2">
-                  PDF Tools
-                </div>
-                <RouterLink
-                  class="list-group-item list-group-item-action"
-                  active-class="active"
-                  to="/pdf-viewer"
-                >
-                  📄 PDF Viewer
-                </RouterLink>
-                <RouterLink
-                  class="list-group-item list-group-item-action"
-                  active-class="active"
-                  to="/pdf-merge"
-                >
-                  🔗 PDF Merge
-                </RouterLink>
-                <RouterLink
-                  class="list-group-item list-group-item-action"
-                  active-class="active"
-                  to="/pdf-extract"
-                >
-                  ✂️ PDF Extract
-                </RouterLink>
-                <RouterLink
-                  class="list-group-item list-group-item-action"
-                  active-class="active"
-                  to="/pdf-resize"
-                >
-                  📏 PDF Resize
-                </RouterLink>
-                <RouterLink
-                  class="list-group-item list-group-item-action"
-                  active-class="active"
-                  to="/pdf-sort"
-                >
-                  🔃 PDF Sort
-                </RouterLink>
-                <RouterLink
-                  class="list-group-item list-group-item-action"
-                  active-class="active"
-                  to="/pdf-text"
-                >
-                  📝 PDF → Text
-                </RouterLink>
-                <RouterLink
-                  class="list-group-item list-group-item-action"
-                  active-class="active"
-                  to="/pdf-fonts"
-                >
-                  🔤 PDF Fonts
-                </RouterLink>
-
-                <div class="list-group-item fw-bold text-muted small text-uppercase bg-light mt-2">
-                  Utilities
-                </div>
-                <RouterLink
-                  class="list-group-item list-group-item-action"
-                  active-class="active"
-                  to="/pomodoro"
-                >
-                  ⏱️ Pomodoro
-                </RouterLink>
+                <template v-for="(group, index) in groupedTools" :key="group.category">
+                  <div
+                    class="list-group-item fw-bold text-muted small text-uppercase bg-light"
+                    :class="{ 'mt-2': index > 0 }"
+                  >
+                    {{ group.category }}
+                  </div>
+                  <RouterLink
+                    v-for="tool in group.items"
+                    :key="tool.path"
+                    class="list-group-item list-group-item-action"
+                    active-class="active"
+                    :to="tool.path"
+                  >
+                    {{ tool.icon }} {{ tool.name }}
+                  </RouterLink>
+                </template>
               </div>
             </div>
           </div>
@@ -252,6 +54,34 @@
     </div>
   </RouterView>
 </template>
+
+<script setup lang="ts">
+import { tools } from "./tools";
+import { computed } from "vue";
+
+const groupedTools = computed(() => {
+  const groups = new Map<string, typeof tools>();
+  const order = ["Text & Coding", "Math & LaTeX", "Graphics & Images", "PDF Tools", "Utilities"];
+
+  for (const cat of order) {
+    groups.set(cat, []);
+  }
+
+  for (const tool of tools) {
+    if (!groups.has(tool.category)) {
+      groups.set(tool.category, []);
+    }
+    groups.get(tool.category)?.push(tool);
+  }
+
+  return Array.from(groups.entries())
+    .filter(([_, items]) => items.length > 0)
+    .map(([category, items]) => ({
+      category,
+      items,
+    }));
+});
+</script>
 
 <style>
 @media (min-width: 992px) {

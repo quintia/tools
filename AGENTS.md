@@ -16,10 +16,10 @@ This project, "Taniguchi's Tools," is a comprehensive, web-based suite of develo
 
 ### Architecture
 
-- **`src/views/`**: Contains the individual tool components (e.g., `string-folding.vue`, `basic-statistics.vue`).
+- **`src/tools.ts`**: **[CRITICAL]** The single source of truth for tool definitions. Contains path, component import, metadata, and category for every tool.
+- **`src/views/`**: Contains the individual tool components (e.g., `string-folding.vue`). New tools must be registered in `src/tools.ts`.
 - **`src/worker/`**: Houses shared logic and pure functions with Web Worker support.
-- **`src/assets/`**: Static data files like JSON mappings for LaTeX/Unicode conversions.
-- **`src/App.vue`**: The main layout containing the categorized sidebar navigation.
+- **`unplugin/`**: Custom build plugins that work for both Vite and Bun.
 
 ## Building and Running
 
@@ -49,20 +49,27 @@ Runs unit tests for utility logic using the Node.js test runner.
 
 ### Code Quality
 
-- **Type Checking:** `npm run check`
+- **Check Everything:** `npm run check` (Runs TypeScript check + Vue check + Biome check)
+- **Fix Formatting:** `npm run check!` (Runs checks + Biome formatting/fixing)
 
 ## Development Conventions
+
+### adding a New Tool
+
+1.  **Create Component:** Create your tool component in `src/views/`.
+2.  **Register:** Add the tool entry to the `tools` array in `src/tools.ts`.
+    - **Note:** Do NOT manually modify `src/router.ts`, `src/App.vue`, or `src/views/home.vue` to add links. These are automatically generated from `src/tools.ts`.
 
 ### UI/UX Design Pattern (The "Window-Bar" Style)
 
 All tools must adhere to the established consistent design language:
 
-1.  **Header:** Every tool starts with an `h2.display-6` title followed by a `p.text-muted` description.
-2.  **Configuration:** Settings/Inputs are placed in a `card mb-4 shadow-sm` with a `card-header` in `fw-bold small text-uppercase text-muted`.
+1.  **Header:** Every tool starts with `ToolHeader` component.
+2.  **Configuration:** Settings/Inputs are placed in a `ToolCard` (or simple card) with a header `fw-bold small text-uppercase text-muted`.
 3.  **Split Layout:** Main workspaces should use a 2-column grid (`col-lg-6`) on large screens.
-4.  **Cards:** All textareas and preview areas are wrapped in cards. Headers should contain tool-specific actions (e.g., "Copy", "Download PNG") as text links on the right.
+4.  **Cards:** All textareas and preview areas are wrapped in cards.
 5.  **Typography:** Monospaced fonts (`font-monospace`) are used for all code, data, and technical text areas.
-6.  **Read-Only Areas:** Output areas use the `bg-light` background class to distinguish them from editable inputs.
+6.  **Read-Only Areas:** Output areas use the `bg-light` background class.
 
 ### Coding Practices
 

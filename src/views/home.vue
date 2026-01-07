@@ -33,202 +33,33 @@
 </template>
 
 <script setup lang="ts">
-const categories = [
-	{
-		title: "Text & Coding",
-		items: [
-			{
-				icon: "🔁",
-				name: "Replace",
-				path: "/replace",
-				description: "Batch replace text with advanced options.",
-			},
-			{
-				icon: "🎨",
-				name: "Prettier Formatter",
-				path: "/prettier",
-				description: "Format JSON, YAML, and code snippets instantly.",
-			},
-			{
-				icon: "🔍",
-				name: "Diff",
-				path: "/diff",
-				description: "Compare two texts side by side and highlight changes.",
-			},
-			{
-				icon: "🧭",
-				name: "Regex Finder",
-				path: "/regex-finder",
-				description: "Search content using powerful regular expressions.",
-			},
-			{
-				icon: "📚",
-				name: "Regex Cheat Sheet",
-				path: "/regex-cheat-sheet",
-				description: "Quickly reference regex tokens and examples.",
-			},
-			{
-				icon: "📚",
-				name: "Context-Free Grammar",
-				path: "/context-free-grammar",
-				description: "Generate context-free grammar from text.",
-			},
-			{
-				icon: "📝",
-				name: "Word Count",
-				path: "/word-count",
-				description: "Count words, characters, and reading time.",
-			},
-			{
-				icon: "📂",
-				name: "Fold Strings",
-				path: "/fold-strings",
-				description: "Wrap long strings or code at your preferred width.",
-			},
-			{
-				icon: "💡",
-				name: "Code Highlighter",
-				path: "/code-highlight",
-				description: "Highlight syntax for dozens of programming languages.",
-			},
-			{
-				icon: "🔡",
-				name: "Encoding Converter",
-				path: "/encoding-converter",
-				description:
-					"Convert uploaded text files between popular character sets.",
-			},
-		],
-	},
-	{
-		title: "Math & LaTeX",
-		items: [
-			{
-				icon: "🔣",
-				name: "Unicode → LaTeX",
-				path: "/unicode-latex",
-				description: "Convert Unicode math symbols to LaTeX markup.",
-			},
-			{
-				icon: "🧮",
-				name: "LaTeX → Unicode",
-				path: "/latex-unicode",
-				description: "Turn LaTeX expressions into readable Unicode.",
-			},
-			{
-				icon: "♾️",
-				name: "Math Preview",
-				path: "/math-preview",
-				description: "Preview rendered math expressions in real time.",
-			},
-			{
-				icon: "📊",
-				name: "Statistics",
-				path: "/statistics",
-				description: "Calculate descriptive statistics from your dataset.",
-			},
-		],
-	},
-	{
-		title: "Graphics & Images",
-		items: [
-			{
-				icon: "🖼️",
-				name: "Image Resize",
-				path: "/image-resize",
-				description: "Resize images while keeping quality in check.",
-			},
-			{
-				icon: "🔄",
-				name: "Image Format Converter",
-				path: "/image-format-converter",
-				description: "Convert between PNG, JPEG, WebP, AVIF, HEIC, and more.",
-			},
-			{
-				icon: "👁️",
-				name: "OCR",
-				path: "/ocr",
-				description: "Extract text from images using OCR.",
-			},
-			{
-				icon: "🖼️",
-				name: "SVG → PNG",
-				path: "/svg-png",
-				description: "Export SVG artwork to high-quality PNG files.",
-			},
-			{
-				icon: "🧜‍♀️",
-				name: "Mermaid",
-				path: "/mermaid",
-				description: "Generate diagrams from Mermaid markdown.",
-			},
-			{
-				icon: "✂️",
-				name: "BG Remover",
-				path: "/bg-remover",
-				description: "Remove backgrounds from images automatically.",
-			},
-		],
-	},
-	{
-		title: "PDF Tools",
-		items: [
-			{
-				icon: "📄",
-				name: "PDF Viewer",
-				path: "/pdf-viewer",
-				description: "View PDF documents directly in the browser.",
-			},
-			{
-				icon: "🔗",
-				name: "PDF Merge",
-				path: "/pdf-merge",
-				description: "Combine multiple PDFs into a single file.",
-			},
-			{
-				icon: "✂️",
-				name: "PDF Extract",
-				path: "/pdf-extract",
-				description: "Extract specific pages from a PDF.",
-			},
-			{
-				icon: "📏",
-				name: "PDF Resize",
-				path: "/pdf-resize",
-				description: "Adjust page sizes and margins for PDFs.",
-			},
-			{
-				icon: "🔃",
-				name: "PDF Sort",
-				path: "/pdf-sort",
-				description: "Reorder PDF pages with drag-and-drop ease.",
-			},
-			{
-				icon: "📝",
-				name: "PDF → Text",
-				path: "/pdf-text",
-				description: "Convert PDF content into editable text.",
-			},
-			{
-				icon: "🔤",
-				name: "PDF Fonts",
-				path: "/pdf-fonts",
-				description: "Inspect and list fonts embedded in PDFs.",
-			},
-		],
-	},
-	{
-		title: "Utilities",
-		items: [
-			{
-				icon: "⏱️",
-				name: "Pomodoro",
-				path: "/pomodoro",
-				description: "Track focus sessions with the Pomodoro timer.",
-			},
-		],
-	},
-];
+import { tools } from "../tools";
+import { computed } from "vue";
+
+const categories = computed(() => {
+  const categoryMap = new Map<string, typeof tools>();
+
+  // Define order of categories
+  const order = ["Text & Coding", "Math & LaTeX", "Graphics & Images", "PDF Tools", "Utilities"];
+
+  for (const cat of order) {
+    categoryMap.set(cat, []);
+  }
+
+  for (const tool of tools) {
+    if (!categoryMap.has(tool.category)) {
+      categoryMap.set(tool.category, []);
+    }
+    categoryMap.get(tool.category)?.push(tool);
+  }
+
+  return Array.from(categoryMap.entries())
+    .filter(([_, items]) => items.length > 0)
+    .map(([title, items]) => ({
+      title,
+      items,
+    }));
+});
 </script>
 
 <style scoped>
