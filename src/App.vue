@@ -1,7 +1,57 @@
+<script setup lang="ts">
+import { nextTick, onMounted, ref, watch } from "vue";
+import { useRoute } from "vue-router";
+
+const route = useRoute();
+const sidebarRef = ref<HTMLElement | null>(null);
+const mainContentRef = ref<HTMLElement | null>(null);
+
+const scrollSidebarToActive = () => {
+	const sidebar = sidebarRef.value;
+	if (!sidebar) {
+		return;
+	}
+
+	const activeLink = sidebar.querySelector<HTMLElement>(
+		".list-group-item.active",
+	);
+	if (!activeLink) {
+		return;
+	}
+
+	activeLink.scrollIntoView({ block: "nearest", behavior: "smooth" });
+};
+
+const scrollMainToTop = () => {
+	if (!mainContentRef.value) {
+		return;
+	}
+
+	mainContentRef.value.scrollTo({ top: 0, behavior: "auto" });
+};
+
+const handleRouteChange = async () => {
+	await nextTick();
+	scrollSidebarToActive();
+	scrollMainToTop();
+};
+
+onMounted(() => {
+	void handleRouteChange();
+});
+
+watch(
+	() => route.fullPath,
+	() => {
+		void handleRouteChange();
+	},
+);
+</script>
+
 <template>
   <RouterView v-slot="{ Component }">
-    <div>
-      <nav class="navbar navbar-expand-lg bg-light border-bottom">
+    <div class="app-shell">
+      <nav class="navbar navbar-expand-lg bg-light border-bottom fixed-top">
         <div class="container-fluid">
           <RouterLink class="navbar-brand" to="/">Taniguchi's Tools</RouterLink>
           <button
@@ -18,10 +68,10 @@
         </div>
       </nav>
 
-      <div class="container-fluid">
+      <div class="container-fluid app-body">
         <div class="row">
           <!-- Sidebar / Accordion Area -->
-          <div class="col-lg-2 pt-3 border-end sidebar-container">
+          <div ref="sidebarRef" class="col-lg-2 pt-3 border-end sidebar-container">
             <div class="collapse d-lg-block" id="sidebarMenu">
               <div class="list-group list-group-flush mb-3">
                 <template v-for="(group, index) in groupedTools" :key="group.category">
@@ -46,7 +96,7 @@
           </div>
 
           <!-- Main Content Area -->
-          <div class="col-lg-10 pt-3 main-content">
+          <div ref="mainContentRef" class="col-lg-10 pt-3 main-content">
             <component :is="Component" />
           </div>
         </div>
@@ -84,12 +134,22 @@ const groupedTools = computed(() => {
 </script>
 
 <style>
-@media (min-width: 992px) {
-  .sidebar-container {
-    min-height: calc(100vh - 56px);
-    position: sticky;
-    top: 56px;
-  }
+:root {
+  --app-header-height: 56px;
+}
+
+.app-shell {
+  min-height: 100vh;
+}
+
+.app-body {
+  padding-top: var(--app-header-height);
+}
+
+.sidebar-container,
+.main-content {
+  height: calc(100vh - var(--app-header-height));
+  overflow-y: auto;
 }
 
 /* Mobile & Tablet adjustments */
