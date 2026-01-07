@@ -93,7 +93,7 @@ function buildHighlightedHtml(text: string, matches: MatchSegment[]): string {
 		if (match.start > cursor)
 			fragments.push(escapeHtml(text.slice(cursor, match.start)));
 		fragments.push(
-			`<mark class="text-finder-highlight">${escapeHtml(text.slice(match.start, match.end))}</mark>`,
+			`<mark style="border: 1px solid #000">${escapeHtml(text.slice(match.start, match.end))}</mark>`,
 		);
 		cursor = match.end;
 	}
@@ -259,12 +259,5 @@ const compiledPreview = computed(() => {
   white-space: pre-wrap;
   word-break: break-word;
   min-height: 100%;
-}
-
-.text-finder-highlight {
-  background-color: #ffe08a;
-  color: #1f2328;
-  padding: 0 0.1em;
-  border-radius: 0.2em;
 }
 </style>
