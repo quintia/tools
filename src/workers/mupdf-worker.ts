@@ -164,10 +164,8 @@ const mupdfWorker = {
 			for (let i = 0; i < pageCount; i++) {
 				const page = doc.loadPage(i);
 				const stext = page.toStructuredText();
-				combinedText += `--- Page ${i + 1} ---
-${stext.asText()}
-
-`;
+				const lines = [`--- Page ${i + 1} --\n`, stext.asText(), "\n\n"];
+				combinedText += lines.join("");
 				stext.destroy();
 			}
 			return combinedText;
