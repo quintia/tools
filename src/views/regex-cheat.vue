@@ -167,8 +167,8 @@ const caveats = [
 <template>
   <div>
     <ToolHeader
-      title="Regex Cheat Sheet"
-      description="A practical reference of Oniguruma syntax and flags."
+      title="Regex Cheat"
+      description="Quick reference for Oniguruma regular expression syntax and common patterns."
     />
 
     <ToolCard title="Quick Start" class="mb-4">

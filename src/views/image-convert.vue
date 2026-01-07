@@ -200,8 +200,8 @@ loadFormats();
 <template>
   <div class="container py-4">
     <ToolHeader
-      title="Image Format Converter"
-      description="Convert images between dozens of formats using ImageMagick WebAssembly."
+      title="Image Convert"
+      description="Batch convert images between popular formats like PNG, JPEG, WebP, AVIF, and HEIC."
     />
 
     <ToolCard title="Configuration" class="mb-4">

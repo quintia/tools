@@ -1,6 +1,6 @@
 <template>
   <div class="container py-4">
-    <h2 class="display-6 mb-2">Code Highlighter</h2>
+    <h2 class="display-6 mb-2">Highlight</h2>
     <p class="text-muted mb-4">
       Generate beautiful syntax-highlighted code snippets using Shiki and download them as PNG
       images.

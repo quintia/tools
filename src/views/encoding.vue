@@ -277,8 +277,8 @@ watch([sourceEncoding, targetEncoding], () => {
 <template>
   <div>
     <ToolHeader
-      title="File Encoding Converter"
-      description="Convert the character encoding of uploaded text files in the browser using iconv-lite."
+      title="Encoding"
+      description="Convert uploaded text files between character sets using iconv-lite."
     />
 
     <ToolCard title="Configuration" class="mb-4">

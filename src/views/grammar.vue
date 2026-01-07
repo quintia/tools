@@ -748,7 +748,7 @@ const matchSummary = computed(() => {
 <template>
   <div>
     <ToolHeader
-      title="Context-Free Grammar Lab"
+      title="Grammar"
       description="Convert BNF grammars into CNF, GNF, and an Oniguruma regex, then preview matches against sample text."
     />
 

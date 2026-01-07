@@ -17,7 +17,7 @@ This project, "Taniguchi's Tools," is a comprehensive, web-based suite of develo
 ### Architecture
 
 - **`src/tools.ts`**: **[CRITICAL]** The single source of truth for tool definitions. Contains path, component import, metadata, and category for every tool.
-- **`src/views/`**: Contains the individual tool components (e.g., `string-folding.vue`). New tools must be registered in `src/tools.ts`.
+- **`src/views/`**: Contains the individual tool components (e.g., `pattern.vue`, `regex.vue`). New tools must be registered in `src/tools.ts`.
 - **`src/worker/`**: Houses shared logic and pure functions with Web Worker support.
 - **`unplugin/`**: Custom build plugins that work for both Vite and Bun.
 

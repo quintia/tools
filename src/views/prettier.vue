@@ -1,6 +1,9 @@
 <template>
   <div>
-    <h2 class="display-6">Prettier Formatter</h2>
+      <ToolHeader
+      title="Prettier"
+      description="Format JSON, YAML, and code snippets instantly."
+    />
     <p class="text-muted">
       Format code from any supported language using Prettier's built-in plugins.
     </p>

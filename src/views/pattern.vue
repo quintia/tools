@@ -108,7 +108,7 @@ const processedData = computed(() => {
 <template>
   <div>
     <ToolHeader
-      title="String Pattern Folding"
+      title="Pattern Fold"
       :description="`Extract common patterns from multiple lines by replacing variations with '${diffChar}'.`"
     />
 

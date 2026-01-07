@@ -131,7 +131,7 @@ const compiledPreview = computed(() => {
 <template>
   <div>
     <ToolHeader
-      title="Regex Finder"
+      title="Regex"
       description="Highlight Oniguruma-style regex matches with an instant preview, powered by vscode-oniguruma."
     />
 

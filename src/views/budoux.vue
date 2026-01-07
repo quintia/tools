@@ -41,7 +41,7 @@ const output = computed(() => {
 <template>
   <div>
     <ToolHeader
-      title="BudouX Newline Inserter"
+      title="Japanese Wrap"
       description="Insert newlines into Japanese text at natural boundaries using BudouX, ensuring each line stays within a specified character limit."
     />
 
