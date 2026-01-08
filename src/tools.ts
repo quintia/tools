@@ -104,6 +104,14 @@ export const tools: Tool[] = [
 		component: () => import("./views/budoux.vue"),
 		category: "Text & Coding",
 	},
+	{
+		path: "/awk",
+		name: "AWK Playground",
+		icon: "🐧",
+		description: "Run AWK scripts in your browser with real-time preview.",
+		component: () => import("./views/awk.vue"),
+		category: "Text & Coding",
+	},
 	// Math & LaTeX
 	{
 		path: "/unicode-latex",
