@@ -1,14 +1,14 @@
 import vue from "unplugin-vue/vite";
 import { defineConfig } from "vite";
-import nodelibsPolyfill from "./unplugin/nodelibs-polyfill";
+import polyfillPlugin from "./unplugin/polyfill";
 import pwaPlugin from "./unplugin/pwa";
-import tesseractCopyPlugin from "./unplugin/tesseract-copy";
+import tesseractPlugin from "./unplugin/tesseract";
 
 export default defineConfig({
 	plugins: [
 		vue(),
-		tesseractCopyPlugin.vite(),
-		nodelibsPolyfill.vite(),
+		tesseractPlugin.vite(),
+		polyfillPlugin.vite(),
 		pwaPlugin.vite({
 			manifest: {
 				name: "Taniguchi's Tools",
@@ -34,10 +34,6 @@ export default defineConfig({
 			},
 		}),
 	],
-
-	optimizeDeps: {
-		exclude: ["mupdf", "tesseract.js"],
-	},
 	worker: {
 		format: "es",
 	},

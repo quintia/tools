@@ -26,14 +26,20 @@ const loadedLanguages = new Set<string>();
 
 const idFromPath = (path: string, regex: RegExp) => path.match(regex)?.[1];
 
-const importGlob = (glob: Record<string, () => Promise<unknown>>, regex: RegExp) =>
+const importGlob = (
+	glob: Record<string, () => Promise<unknown>>,
+	regex: RegExp,
+) =>
 	Object.entries(glob)
 		.map(([path, module]) => ({ id: idFromPath(path, regex), path, module }))
-		.filter((l): l is { id: string; path: string; module: () => Promise<unknown> } => !!l.id);
+		.filter(
+			(l): l is { id: string; path: string; module: () => Promise<unknown> } =>
+				!!l.id,
+		);
 
 const LANGUAGES = importGlob(
 	import.meta.glob("../../node_modules/prismjs/components/prism-*.js"),
-	/prism-([\w-]+)\.js$/
+	/prism-([\w-]+)\.js$/,
 );
 
 const ensureLanguageLoaded = async (lang: string) => {

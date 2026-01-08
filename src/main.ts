@@ -1,6 +1,6 @@
+import { Buffer } from "node:buffer";
+import process from "node:process";
 import { createApp } from "vue";
-import { Buffer } from "buffer";
-import process from "process";
 import App from "./App.vue";
 import { router } from "./router";
 import "bootswatch/dist/lumen/bootstrap.min.css";
