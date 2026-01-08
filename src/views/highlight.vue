@@ -92,6 +92,7 @@
 <script setup lang="ts">
 import Prism from "prismjs";
 import { reactive, watch } from "vue";
+import "prismjs/components/prism-markup-templating"; // Core dependency for templating languages
 import LoadingOverlay from "../components/LoadingOverlay.vue";
 import MonospaceEditor from "../components/MonospaceEditor.vue";
 import ToolCard from "../components/ToolCard.vue";
