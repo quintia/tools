@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { generateDiffFile } from "@git-diff-view/file";
-import { DiffModeEnum, DiffView } from "@git-diff-view/vue";
 import * as Comlink from "comlink";
-import { computed, onMounted, ref, watch } from "vue";
+import { Bash } from "just-bash";
+import { onMounted, ref, watch } from "vue";
 import CopyButton from "../components/CopyButton.vue";
 import MonospaceEditor from "../components/MonospaceEditor.vue";
 import ToolCard from "../components/ToolCard.vue";
@@ -12,11 +11,14 @@ import OnigurumaWorkerClass from "../workers/oniguruma-worker?worker";
 
 const worker = ref<Comlink.Remote<OnigurumaWorker> | null>(null);
 const isWorkerReady = ref(false);
+let bash: Bash | null = null;
 
 onMounted(() => {
 	const w = new OnigurumaWorkerClass();
 	worker.value = Comlink.wrap<OnigurumaWorker>(w);
 	isWorkerReady.value = true;
+	bash = new Bash();
+	updateDiff();
 });
 
 const text = ref(
@@ -29,6 +31,7 @@ const flags = ref("");
 const result = ref("");
 const error = ref<string | null>(null);
 const isProcessing = ref(false);
+const diffOutput = ref("");
 
 watch(
 	[text, replaceText, search, flags, isWorkerReady],
@@ -64,25 +67,24 @@ watch(
 	{ immediate: true },
 );
 
-const diffFile = computed(() => {
-	let oldText = (text.value || "").replace(/\r\n/g, "\n");
-	let newText = (result.value || "").replace(/\r\n/g, "\n");
-	if (oldText === newText) return null;
+const updateDiff = async () => {
+	if (!bash || !text.value || !result.value || text.value === result.value) {
+		diffOutput.value = "";
+		return;
+	}
 
-	if (oldText && !oldText.endsWith("\n")) oldText += "\n";
-	if (newText && !newText.endsWith("\n")) newText += "\n";
+	try {
+		await bash.writeFile("original.txt", text.value);
+		await bash.writeFile("modified.txt", result.value);
+		const res = await bash.exec("diff -u original.txt modified.txt");
+		diffOutput.value = res.stdout;
+	} catch (e) {
+		console.error("Diff failed:", e);
+		diffOutput.value = "";
+	}
+};
 
-	const file = generateDiffFile(
-		"Deleted",
-		oldText,
-		"Added",
-		newText,
-		"plaintext",
-		"plaintext",
-	);
-	file.initRaw();
-	return file;
-});
+watch([text, result], updateDiff);
 </script>
 
 <template>
@@ -162,15 +164,22 @@ const diffFile = computed(() => {
         </ToolCard>
       </div>
     </div>
-    <div v-if="diffFile" class="row">
+    <div v-if="diffOutput" class="row">
       <div class="col-12 mb-4">
         <ToolCard title="Visual Diff" no-padding>
-          <DiffView :diff-file="diffFile" :diff-view-mode="DiffModeEnum.Split" />
+          <MonospaceEditor
+            v-model="diffOutput"
+            language="diff"
+            readonly
+            :rows="15"
+            :bg-light="true"
+          />
         </ToolCard>
       </div>
     </div>
   </div>
 </template>
+
 
 <style scoped>
 .font-monospace {

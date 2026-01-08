@@ -13,8 +13,6 @@
 	},
 	"dependencies": {
 		"@biomejs/biome": "^2.3.11",
-		"@git-diff-view/file": "^0.0.35",
-		"@git-diff-view/vue": "^0.0.35",
 		"@hpcc-js/wasm-graphviz": "^1.18.0",
 		"@imagemagick/magick-wasm": "^0.0.37",
 		"@jspm/core": "^2.1.0",

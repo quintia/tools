@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { generateDiffFile } from "@git-diff-view/file";
-import { DiffModeEnum, DiffView } from "@git-diff-view/vue";
-import { computed, ref } from "vue";
+import { Bash } from "just-bash";
+import { onMounted, ref, watch } from "vue";
+import CopyButton from "../components/CopyButton.vue";
 import MonospaceEditor from "../components/MonospaceEditor.vue";
 import ToolCard from "../components/ToolCard.vue";
 import ToolHeader from "../components/ToolHeader.vue";
@@ -12,25 +12,41 @@ const oldText = ref(
 const newText = ref(
 	"This is the modified text.\nIt has several lines.\nAnother has been changed.\nOne line was added.",
 );
+const output = ref("");
+const error = ref("");
+const isProcessing = ref(false);
 
-const diffFile = computed(() => {
-	let oldValue = (oldText.value || "").replace(/\r\n/g, "\n");
-	let newValue = (newText.value || "").replace(/\r\n/g, "\n");
-	if (oldValue === newValue) return null;
+let bash: Bash | null = null;
 
-	if (oldValue && !oldValue.endsWith("\n")) oldValue += "\n";
-	if (newValue && !newValue.endsWith("\n")) newValue += "\n";
+onMounted(() => {
+	bash = new Bash();
+	runDiff();
+});
 
-	const file = generateDiffFile(
-		"oldText",
-		oldValue,
-		"newText",
-		newValue,
-		"plaintext",
-		"plaintext",
-	);
-	file.initRaw();
-	return file;
+const runDiff = async () => {
+	if (!bash) return;
+	isProcessing.value = true;
+	error.value = "";
+
+	try {
+		await bash.writeFile("old.txt", oldText.value);
+		await bash.writeFile("new.txt", newText.value);
+		const result = await bash.exec("diff -u old.txt new.txt");
+		// diff returns exit code 1 if differences are found, which is normal behavior
+		if (result.exitCode > 1) {
+			error.value = result.stderr || `Diff failed with code ${result.exitCode}`;
+		} else {
+			output.value = result.stdout;
+		}
+	} catch (e) {
+		error.value = String(e);
+	} finally {
+		isProcessing.value = false;
+	}
+};
+
+watch([oldText, newText], () => {
+	runDiff();
 });
 </script>
 
@@ -38,7 +54,7 @@ const diffFile = computed(() => {
   <div>
     <ToolHeader
       title="Diff"
-      description="Compare two text blocks and visualize the differences using a unified diff view."
+      description="Compare two text blocks and visualize the differences using unified diff."
     />
 
     <div class="row">
@@ -53,29 +69,22 @@ const diffFile = computed(() => {
         </ToolCard>
       </div>
       <div class="col-12 mb-4">
-        <ToolCard title="Visual Diff" no-padding>
-          <div id="diffText" class="diff-container border-0 rounded-0">
-            <DiffView
-              v-if="diffFile"
-              :diff-file="diffFile"
-              :diff-view-mode="DiffModeEnum.Unified"
-            />
-            <div v-else class="p-5 text-center text-muted">
-              No differences found between the two versions
-            </div>
+        <ToolCard title="Unified Diff" no-padding>
+          <template #header-actions>
+            <CopyButton :content="output" />
+          </template>
+          <div v-if="error" class="p-3 bg-danger bg-opacity-10 text-danger font-monospace">
+            {{ error }}
           </div>
+          <MonospaceEditor
+            v-model="output"
+            language="diff"
+            readonly
+            :rows="15"
+            :bg-light="true"
+          />
         </ToolCard>
       </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-.diff-container {
-  height: 18em;
-  overflow-y: scroll;
-}
-.font-monospace {
-  font-family: var(--bs-font-monospace);
-}
-</style>
