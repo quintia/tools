@@ -7,7 +7,8 @@ export interface Tool {
 	description: string;
 	component: () => Promise<{ default: Component }>;
 	category:
-		| "Text & Coding"
+		| "Text Tools"
+		| "Developer Tools"
 		| "Math & LaTeX"
 		| "Graphics & Images"
 		| "PDF Tools"
@@ -15,22 +16,14 @@ export interface Tool {
 }
 
 export const tools: Tool[] = [
-	// Text & Coding
+	// Text Tools
 	{
 		path: "/replace",
 		name: "Replace",
 		icon: "🔁",
 		description: "Batch replace text with advanced options.",
 		component: () => import("./views/replace.vue"),
-		category: "Text & Coding",
-	},
-	{
-		path: "/prettier",
-		name: "Prettier",
-		icon: "💅",
-		description: "Format JSON, YAML, and code snippets instantly.",
-		component: () => import("./views/prettier.vue"),
-		category: "Text & Coding",
+		category: "Text Tools",
 	},
 	{
 		path: "/diff",
@@ -38,31 +31,7 @@ export const tools: Tool[] = [
 		icon: "🆚",
 		description: "Compare two texts side by side and highlight changes.",
 		component: () => import("./views/diff.vue"),
-		category: "Text & Coding",
-	},
-	{
-		path: "/regex",
-		name: "Regex",
-		icon: "🔍",
-		description: "Search content using powerful regular expressions.",
-		component: () => import("./views/regex.vue"),
-		category: "Text & Coding",
-	},
-	{
-		path: "/regex-cheat",
-		name: "Regex Cheat",
-		icon: "📖",
-		description: "Quickly reference regex tokens and examples.",
-		component: () => import("./views/regex-cheat.vue"),
-		category: "Text & Coding",
-	},
-	{
-		path: "/grammar",
-		name: "Grammar",
-		icon: "🌳",
-		description: "Generate context-free grammar from text.",
-		component: () => import("./views/grammar.vue"),
-		category: "Text & Coding",
+		category: "Text Tools",
 	},
 	{
 		path: "/word-count",
@@ -70,7 +39,7 @@ export const tools: Tool[] = [
 		icon: "🔢",
 		description: "Count words, characters, and reading time.",
 		component: () => import("./views/word-count.vue"),
-		category: "Text & Coding",
+		category: "Text Tools",
 	},
 	{
 		path: "/pattern",
@@ -78,15 +47,7 @@ export const tools: Tool[] = [
 		icon: "🧩",
 		description: "Extract common patterns from multiple lines of text.",
 		component: () => import("./views/pattern.vue"),
-		category: "Text & Coding",
-	},
-	{
-		path: "/highlight",
-		name: "Highlight",
-		icon: "🖍️",
-		description: "Highlight syntax for dozens of programming languages.",
-		component: () => import("./views/highlight.vue"),
-		category: "Text & Coding",
+		category: "Text Tools",
 	},
 	{
 		path: "/encoding",
@@ -94,7 +55,7 @@ export const tools: Tool[] = [
 		icon: "🔠",
 		description: "Convert uploaded text files between character sets.",
 		component: () => import("./views/encoding.vue"),
-		category: "Text & Coding",
+		category: "Text Tools",
 	},
 	{
 		path: "/budoux",
@@ -102,7 +63,48 @@ export const tools: Tool[] = [
 		icon: "🇯🇵",
 		description: "Smart line-breaking for Japanese text at natural boundaries.",
 		component: () => import("./views/budoux.vue"),
-		category: "Text & Coding",
+		category: "Text Tools",
+	},
+	// Developer Tools
+	{
+		path: "/prettier",
+		name: "Prettier",
+		icon: "💅",
+		description: "Format JSON, YAML, and code snippets instantly.",
+		component: () => import("./views/prettier.vue"),
+		category: "Developer Tools",
+	},
+	{
+		path: "/regex",
+		name: "Regex",
+		icon: "🔍",
+		description: "Search content using powerful regular expressions.",
+		component: () => import("./views/regex.vue"),
+		category: "Developer Tools",
+	},
+	{
+		path: "/regex-cheat",
+		name: "Regex Cheat",
+		icon: "📖",
+		description: "Quickly reference regex tokens and examples.",
+		component: () => import("./views/regex-cheat.vue"),
+		category: "Developer Tools",
+	},
+	{
+		path: "/grammar",
+		name: "Grammar",
+		icon: "🌳",
+		description: "Generate context-free grammar from text.",
+		component: () => import("./views/grammar.vue"),
+		category: "Developer Tools",
+	},
+	{
+		path: "/highlight",
+		name: "Highlight",
+		icon: "🖍️",
+		description: "Highlight syntax for dozens of programming languages.",
+		component: () => import("./views/highlight.vue"),
+		category: "Developer Tools",
 	},
 	{
 		path: "/awk",
@@ -110,7 +112,7 @@ export const tools: Tool[] = [
 		icon: "🐧",
 		description: "Run AWK scripts in your browser with real-time preview.",
 		component: () => import("./views/awk.vue"),
-		category: "Text & Coding",
+		category: "Developer Tools",
 	},
 	{
 		path: "/sed",
@@ -118,7 +120,7 @@ export const tools: Tool[] = [
 		icon: "📝",
 		description: "Run SED scripts in your browser with real-time preview.",
 		component: () => import("./views/sed.vue"),
-		category: "Text & Coding",
+		category: "Developer Tools",
 	},
 	{
 		path: "/jq",
@@ -126,7 +128,7 @@ export const tools: Tool[] = [
 		icon: "🔍",
 		description: "Run JQ filters against JSON data in your browser.",
 		component: () => import("./views/jq.vue"),
-		category: "Text & Coding",
+		category: "Developer Tools",
 	},
 	// Math & LaTeX
 	{

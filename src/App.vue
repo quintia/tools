@@ -62,7 +62,8 @@ import { tools } from "./tools";
 const groupedTools = computed(() => {
 	const groups = new Map<string, typeof tools>();
 	const order = [
-		"Text & Coding",
+		"Text Tools",
+		"Developer Tools",
 		"Math & LaTeX",
 		"Graphics & Images",
 		"PDF Tools",

@@ -41,7 +41,8 @@ const categories = computed(() => {
 
 	// Define order of categories
 	const order = [
-		"Text & Coding",
+		"Text Tools",
+		"Developer Tools",
 		"Math & LaTeX",
 		"Graphics & Images",
 		"PDF Tools",
