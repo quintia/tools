@@ -120,6 +120,14 @@ export const tools: Tool[] = [
 		component: () => import("./views/sed.vue"),
 		category: "Text & Coding",
 	},
+	{
+		path: "/jq",
+		name: "JQ Playground",
+		icon: "🔍",
+		description: "Run JQ filters against JSON data in your browser.",
+		component: () => import("./views/jq.vue"),
+		category: "Text & Coding",
+	},
 	// Math & LaTeX
 	{
 		path: "/unicode-latex",
