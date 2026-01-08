@@ -1,27 +1,8 @@
 <script setup lang="ts">
 import { CodeJar } from "codejar";
 import Prism from "prismjs";
-import "prismjs/themes/prism.css";
-// Import common languages
-import "prismjs/components/prism-dot";
-import "prismjs/components/prism-mermaid";
-import "prismjs/components/prism-latex";
-import "prismjs/components/prism-regex";
-import "prismjs/components/prism-bnf";
-import "prismjs/components/prism-json";
-import "prismjs/components/prism-javascript";
-import "prismjs/components/prism-typescript";
-import "prismjs/components/prism-css";
-import "prismjs/components/prism-scss";
-import "prismjs/components/prism-less";
-import "prismjs/components/prism-markup";
-import "prismjs/components/prism-markup-templating";
-import "prismjs/components/prism-yaml";
-import "prismjs/components/prism-markdown";
-import "prismjs/components/prism-graphql";
-import "prismjs/components/prism-handlebars";
-
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
+import "prismjs/themes/prism.css"; // Default theme
 
 const props = defineProps<{
 	modelValue: string;
@@ -38,6 +19,32 @@ const emit = defineEmits(["update:modelValue"]);
 
 const editorRef = ref<HTMLElement | null>(null);
 let jar: CodeJar | null = null;
+const loadedLanguages = new Set<string>();
+
+// --- Dynamic Resource Loading ---
+
+const idFromPath = (path: string, regex: RegExp) => path.match(regex)?.[1];
+
+const importGlob = (glob: Record<string, () => Promise<unknown>>, regex: RegExp) =>
+	Object.entries(glob)
+		.map(([path, module]) => ({ id: idFromPath(path, regex), path, module }))
+		.filter((l): l is { id: string; path: string; module: () => Promise<unknown> } => !!l.id);
+
+const LANGUAGES = importGlob(
+	import.meta.glob("../../node_modules/prismjs/components/prism-*.js"),
+	/prism-([\w-]+)\.js$/
+);
+
+const ensureLanguageLoaded = async (lang: string) => {
+	if (loadedLanguages.has(lang)) return;
+	const entry = LANGUAGES.find((l) => l.id === lang);
+	if (entry) {
+		await entry.module();
+		loadedLanguages.add(lang);
+	}
+};
+
+// --- Editor Logic ---
 
 const defaultHighlight = (e: HTMLElement) => {
 	const lang = props.language || "markup";
@@ -46,13 +53,29 @@ const defaultHighlight = (e: HTMLElement) => {
 	e.innerHTML = html;
 };
 
+const updateHighlighting = async () => {
+	if (props.language) {
+		await ensureLanguageLoaded(props.language);
+	}
+	if (jar) {
+		jar.updateOptions({}); // Trigger re-highlight
+		// Force a re-highlight if needed because updateOptions might not always re-render if options are same
+		const el = editorRef.value;
+		if (el) defaultHighlight(el);
+	}
+};
+
 const handleKeyDown = (event: KeyboardEvent) => {
 	if (props.singleLine && event.key === "Enter") {
 		event.preventDefault();
 	}
 };
 
-onMounted(() => {
+onMounted(async () => {
+	if (props.language) {
+		await ensureLanguageLoaded(props.language);
+	}
+
 	if (editorRef.value) {
 		editorRef.value.contentEditable = props.readonly ? "false" : "true";
 		jar = CodeJar(editorRef.value, props.highlight || defaultHighlight, {
@@ -92,10 +115,8 @@ watch(
 
 watch(
 	() => props.language,
-	() => {
-		if (jar) {
-			jar.updateOptions({}); // Trigger re-highlight
-		}
+	async () => {
+		await updateHighlighting();
 	},
 );
 
