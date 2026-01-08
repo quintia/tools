@@ -102,7 +102,6 @@ const groupedTools = computed(() => {
 /* Mobile & Tablet adjustments */
 @media (max-width: 991.98px) {
   .sidebar-container {
-    border-end: none !important;
     border-bottom: 1px solid #dee2e6;
   }
 }
