@@ -112,6 +112,14 @@ export const tools: Tool[] = [
 		component: () => import("./views/awk.vue"),
 		category: "Text & Coding",
 	},
+	{
+		path: "/sed",
+		name: "SED Playground",
+		icon: "📝",
+		description: "Run SED scripts in your browser with real-time preview.",
+		component: () => import("./views/sed.vue"),
+		category: "Text & Coding",
+	},
 	// Math & LaTeX
 	{
 		path: "/unicode-latex",
