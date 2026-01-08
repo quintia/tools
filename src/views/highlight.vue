@@ -91,15 +91,18 @@
 
 <script setup lang="ts">
 import Prism from "prismjs";
-import { reactive, watch, onMounted } from "vue";
+import { reactive, watch } from "vue";
 import LoadingOverlay from "../components/LoadingOverlay.vue";
 import MonospaceEditor from "../components/MonospaceEditor.vue";
 import ToolCard from "../components/ToolCard.vue";
 import ToolHeader from "../components/ToolHeader.vue";
 
-// --- Constants & Types ---
+// --- Constants ---
+
 const FONT_STACK = 'SF Mono, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace';
 const PADDING = 20;
+
+// --- Types ---
 
 interface SimpleToken {
   content: string;
@@ -126,7 +129,8 @@ interface AppStatus {
   error: string;
 }
 
-// --- Data Loading ---
+// --- Data & Resources ---
+
 const idFromPath = (path: string, regex: RegExp) => path.match(regex)?.[1];
 
 const importGlob = (glob: Record<string, () => Promise<unknown>>, regex: RegExp) =>
@@ -139,16 +143,15 @@ const LANGUAGES = importGlob(
   /prism-([\w-]+)\.js$/
 );
 
-const THEMES = Object.entries(import.meta.glob("../../node_modules/prismjs/themes/*.css", { query: '?raw', import: 'default' })).map(([path, module]) => {
-  const id = idFromPath(path, /prism-(.*)\.css$/) || "default";
-  return {
-    id,
+const THEMES = Object.entries(import.meta.glob("../../node_modules/prismjs/themes/*.css", { query: '?raw', import: 'default' })).map(
+  ([path, module]) => ({
+    id: idFromPath(path, /prism-(.*)\.css$/) || "default",
     path,
     module,
-  };
-});
+  })
+);
 
-// --- Logic ---
+// --- State ---
 
 const state = reactive<AppState>({
   code: `function greet(name: string) {
@@ -169,15 +172,9 @@ const status = reactive<AppStatus>({
 });
 
 const loadedLanguages = new Set<string>();
+const themeCache = new Map<string, ParsedTheme>();
 
-const ensureLanguageLoaded = async (lang: string) => {
-  if (loadedLanguages.has(lang)) return;
-  const entry = LANGUAGES.find((l) => l.id === lang);
-  if (entry) {
-    await entry.module();
-    loadedLanguages.add(lang);
-  }
-};
+// --- Utilities: Theme Parsing ---
 
 const extractColor = (declarations: string, property: string): string | null => {
   const regex = new RegExp(`${property}\\s*:\\s*([^;]+)(?:;|$)`, "i");
@@ -212,6 +209,8 @@ const parseThemeCss = (css: string): ParsedTheme => {
   return theme;
 };
 
+// --- Utilities: Token Processing ---
+
 const flattenTokens = (tokens: (string | Prism.Token)[], colors: Record<string, string>, defaultColor: string): SimpleToken[] => {
   const result: SimpleToken[] = [];
 
@@ -229,7 +228,8 @@ const flattenTokens = (tokens: (string | Prism.Token)[], colors: Record<string, 
   return result;
 };
 
-// Canvas Rendering Logic
+// --- Utilities: Canvas Rendering ---
+
 const createHighResCanvas = (width: number, height: number, pixelRatio = 2) => {
   const canvas = document.createElement("canvas");
   canvas.width = width * pixelRatio;
@@ -303,21 +303,41 @@ const renderToCanvas = (tokens: SimpleToken[], theme: ParsedTheme, fontSize: num
 
 // --- Actions ---
 
+const ensureLanguageLoaded = async (lang: string) => {
+  if (loadedLanguages.has(lang)) return;
+  const entry = LANGUAGES.find((l) => l.id === lang);
+  if (entry) {
+    await entry.module();
+    loadedLanguages.add(lang);
+  }
+};
+
+const ensureThemeParsed = async (themeId: string): Promise<ParsedTheme> => {
+  if (themeCache.has(themeId)) {
+    return themeCache.get(themeId)!;
+  }
+  const entry = THEMES.find((t) => t.id === themeId);
+  const css = entry ? (await entry.module() as string) : "";
+  const parsed = parseThemeCss(css);
+  themeCache.set(themeId, parsed);
+  return parsed;
+};
+
 const render = async () => {
   status.isRendering = true;
   status.error = "";
 
   try {
+    // 1. Prepare Resources
     await ensureLanguageLoaded(state.language);
+    const theme = await ensureThemeParsed(state.themeId);
 
-    const theme = parseThemeCss(await THEMES.find(t => t.id === state.themeId)?.module() as string);
-
-    // Tokenize
+    // 2. Tokenize
     const grammar = Prism.languages[state.language] || Prism.languages.markup;
     const tokens = Prism.tokenize(state.code, grammar);
     const flatTokens = flattenTokens(tokens, theme.colors, theme.fg);
 
-    // Render
+    // 3. Render
     state.previewImage = renderToCanvas(flatTokens, theme, state.fontSize);
   } catch (e: any) {
     status.error = e.message || "Rendering failed";
@@ -326,16 +346,6 @@ const render = async () => {
     status.isRendering = false;
   }
 };
-
-let debounceTimer: number;
-watch(
-  () => [state.code, state.language, state.themeId, state.fontSize],
-  () => {
-    clearTimeout(debounceTimer);
-    debounceTimer = window.setTimeout(render, 500);
-  },
-  { deep: true, immediate: true }
-);
 
 const downloadPng = () => {
   if (!state.previewImage) return;
@@ -351,6 +361,18 @@ const downloadPng = () => {
     status.isDownloading = false;
   }
 };
+
+// --- Watchers ---
+
+let debounceTimer: number;
+watch(
+  () => [state.code, state.language, state.themeId, state.fontSize],
+  () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = window.setTimeout(render, 500);
+  },
+  { deep: true, immediate: true }
+);
 </script>
 
 <style scoped>
