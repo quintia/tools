@@ -10,6 +10,7 @@ interface PWAOptions {
 
 export default createUnplugin((options: PWAOptions = {}) => {
 	let outDir = "dist";
+	let isDev = false;
 	const virtualModuleId = "virtual:pwa-register";
 	const resolvedVirtualModuleId = `\0${virtualModuleId}`;
 
@@ -22,9 +23,12 @@ export default createUnplugin((options: PWAOptions = {}) => {
 		},
 		load(id) {
 			if (id === resolvedVirtualModuleId) {
+				if (isDev) {
+					return "export const registerSW = () => {};";
+				}
 				return `export const registerSW = (options = {}) => {
           if (!('serviceWorker' in navigator)) return;
-          
+
           const { immediate = false } = options;
 
           const register = async () => {
@@ -68,6 +72,7 @@ export default createUnplugin((options: PWAOptions = {}) => {
 		vite: {
 			configResolved(config) {
 				outDir = path.resolve(config.root, config.build.outDir);
+				isDev = config.command === "serve";
 			},
 			async closeBundle() {
 				// Only run in production build
@@ -99,6 +104,7 @@ export default createUnplugin((options: PWAOptions = {}) => {
 				});
 			},
 			transformIndexHtml(html) {
+				if (isDev) return html;
 				return html.replace(
 					"</head>",
 					'  <link rel="manifest" href="/manifest.webmanifest">\n</head>',

@@ -1,16 +1,15 @@
 <script setup lang="ts">
 import { reactive, ref, watch } from "vue";
-import { Cropper } from "vue-advanced-cropper";
-import "vue-advanced-cropper/dist/style.css";
 import DownloadLink from "../components/DownloadLink.vue";
 import FilePicker from "../components/FilePicker.vue";
+import ImageCropper from "../components/ImageCropper.vue";
 import LoadingOverlay from "../components/LoadingOverlay.vue";
 import ToolCard from "../components/ToolCard.vue";
 import ToolHeader from "../components/ToolHeader.vue";
 
 const sourceImageUrl = ref<string | null>(null);
 const resultImageUrl = ref<string | null>(null);
-const cropper = ref<InstanceType<typeof Cropper> | null>(null);
+const cropper = ref<InstanceType<typeof ImageCropper> | null>(null);
 const isProcessing = ref(false);
 
 const config = reactive({
@@ -194,7 +193,7 @@ watch([() => config.format, () => config.quality], applyResize);
             style="min-height: 500px"
           >
             <LoadingOverlay :loading="isProcessing && !sourceImageUrl" message="Loading Image..." />
-            <Cropper
+            <ImageCropper
               v-if="sourceImageUrl"
               ref="cropper"
               class="cropper"

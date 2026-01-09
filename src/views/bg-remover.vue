@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import * as Comlink from "comlink";
 import { onMounted, onUnmounted, reactive, ref, watch } from "vue";
-import { Cropper } from "vue-advanced-cropper";
-import "vue-advanced-cropper/dist/style.css";
 import DownloadLink from "../components/DownloadLink.vue";
 import FilePicker from "../components/FilePicker.vue";
+import ImageCropper from "../components/ImageCropper.vue";
 import LoadingOverlay from "../components/LoadingOverlay.vue";
 import ToolCard from "../components/ToolCard.vue";
 import ToolHeader from "../components/ToolHeader.vue";
@@ -16,7 +15,7 @@ const resultImageUrl = ref<string | null>(null);
 const isProcessing = ref(false);
 const isOpenCvReady = ref(false);
 const errorMessage = ref<string | null>(null);
-const cropper = ref<InstanceType<typeof Cropper> | null>(null);
+const cropper = ref<InstanceType<typeof ImageCropper> | null>(null);
 
 const config = reactive({
 	mode: "grabcut" as "magic" | "grabcut" | "global",
@@ -246,7 +245,7 @@ watch(
             <LoadingOverlay :loading="!isOpenCvReady" message="Initializing Engine..." />
 
             <template v-if="sourceImageUrl">
-              <Cropper
+              <ImageCropper
                 v-if="config.mode === 'grabcut'"
                 ref="cropper"
                 :src="sourceImageUrl"
