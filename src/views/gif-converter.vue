@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import * as gifenc from "gifenc";
-import type { Movie, MP4BoxBuffer, Sample } from "mp4box";
-import * as MP4Box from "mp4box";
 import { onUnmounted, ref } from "vue";
 import FilePicker from "../components/FilePicker.vue";
 import ToolHeader from "../components/ToolHeader.vue";
@@ -65,75 +63,24 @@ onUnmounted(() => {
 	if (resultUrl.value) URL.revokeObjectURL(resultUrl.value);
 });
 
-const extractVideoSamples = async (arrayBuffer: ArrayBuffer) => {
-	const mp4boxfile = MP4Box.createFile();
-
-	let videoTrack: Movie["videoTracks"][number] | undefined;
-	let trackBox: unknown | null = null;
-	const samples: Sample[] = [];
-	let samplesResolved = false;
-	let resolveSamples!: (value: Sample[]) => void;
-	let rejectSamples!: (reason?: string) => void;
-
-	const samplesPromise = new Promise<Sample[]>((resolve, reject) => {
-		resolveSamples = (value) => {
-			if (samplesResolved) return;
-			samplesResolved = true;
-			resolve(value);
+const waitForEvent = (target: EventTarget, event: string) =>
+	new Promise<void>((resolve) => {
+		const handler = () => {
+			target.removeEventListener(event, handler);
+			resolve();
 		};
-		rejectSamples = (reason) => {
-			if (samplesResolved) return;
-			samplesResolved = true;
-			reject(reason);
-		};
+		target.addEventListener(event, handler, { once: true });
 	});
 
-	const infoPromise = new Promise<Movie>((resolve, reject) => {
-		mp4boxfile.onError = (e: string) => {
-			reject(e);
-			rejectSamples(e);
-		};
-		mp4boxfile.onReady = (info: Movie) => {
-			videoTrack = info.videoTracks[0];
-			if (!videoTrack) {
-				const err = "No video track found.";
-				reject(err);
-				rejectSamples(err);
-				return;
-			}
-			trackBox = mp4boxfile.getTrackById(videoTrack.id);
-			mp4boxfile.setExtractionOptions(videoTrack.id, null, {
-				nbSamples: 100000,
-			});
-			mp4boxfile.start();
-			resolve(info);
-		};
-	});
-
-	mp4boxfile.onSamples = (_id, _user, newSamples) => {
-		samples.push(...newSamples);
-		if (
-			videoTrack &&
-			videoTrack.nb_samples > 0 &&
-			samples.length >= videoTrack.nb_samples
-		) {
-			resolveSamples(samples);
-		}
-	};
-
-	(arrayBuffer as MP4BoxBuffer).fileStart = 0;
-	mp4boxfile.appendBuffer(arrayBuffer as MP4BoxBuffer);
-	mp4boxfile.flush();
-
-	const info = await infoPromise;
-	const resolvedTrack = videoTrack ?? info.videoTracks[0];
-	if (!resolvedTrack) throw new Error("No video track found.");
-
-	await new Promise((r) => setTimeout(r, 0));
-	if (!samplesResolved) resolveSamples(samples);
-	const extractedSamples = await samplesPromise;
-
-	return { track: resolvedTrack, trackBox, samples: extractedSamples };
+const seekTo = async (video: HTMLVideoElement, time: number) => {
+	const clamped = Math.min(Math.max(time, 0), video.duration || time);
+	if (Math.abs(video.currentTime - clamped) < 0.001) {
+		return;
+	}
+	const seeked = waitForEvent(video, "seeked");
+	video.currentTime = clamped;
+	await seeked;
+	await new Promise((r) => requestAnimationFrame(() => r(undefined)));
 };
 
 const convertToGif = async () => {
@@ -145,111 +92,64 @@ const convertToGif = async () => {
 	resultUrl.value = "";
 
 	try {
-		const arrayBuffer = await file.value.arrayBuffer();
-
-		status.value = "Extracting samples...";
-		const { track, trackBox, samples } = await extractVideoSamples(arrayBuffer);
+		const video = videoElement.value;
+		if (!video) throw new Error("Video element not ready.");
+		if (video.readyState < 1) {
+			await waitForEvent(video, "loadedmetadata");
+		}
+		if (!video.videoWidth || !video.videoHeight) {
+			throw new Error("Unable to read video dimensions.");
+		}
+		const selectedStart = Math.max(0, startTime.value);
+		const selectedEnd = Math.min(
+			endTime.value,
+			video.duration || endTime.value,
+		);
+		if (selectedEnd <= selectedStart) {
+			throw new Error("End time must be greater than start time.");
+		}
 
 		const canvas = document.createElement("canvas");
-
 		const ctx = canvas.getContext("2d", { willReadFrequently: true });
-
 		if (!ctx) throw new Error("Could not get canvas context");
 
-		const gifWidth = Math.min(track.track_width, 480);
-
+		const gifWidth = Math.min(video.videoWidth, 480);
 		const gifHeight = Math.round(
-			(gifWidth / track.track_width) * track.track_height,
+			(gifWidth / video.videoWidth) * video.videoHeight,
 		);
-
 		canvas.width = gifWidth;
-
 		canvas.height = gifHeight;
 
 		const writer = gifenc.GIFEncoder();
+		const framesPerSecond = 10;
+		const totalFrames = Math.max(
+			1,
+			Math.ceil((selectedEnd - selectedStart) * framesPerSecond),
+		);
+		const frameStep = (selectedEnd - selectedStart) / totalFrames;
+		const delay = Math.max(20, Math.round(1000 / framesPerSecond));
 
-		const frames: VideoFrame[] = [];
+		status.value = `Processing ${totalFrames} frames...`;
 
-		const decoder = new VideoDecoder({
-			output: (frame) => {
-				const timestamp = frame.timestamp / 1000000;
+		for (let i = 0; i < totalFrames; i++) {
+			const time = selectedStart + i * frameStep;
+			await seekTo(video, time);
 
-				if (timestamp >= startTime.value && timestamp <= endTime.value) {
-					frames.push(frame);
-				} else {
-					frame.close();
-				}
-			},
-
-			error: (e) => {
-				error.value = `Decoding error: ${e.message}`;
-			},
-		});
-
-		const config = {
-			codec: track.codec,
-
-			codedWidth: track.track_width,
-
-			codedHeight: track.track_height,
-
-			description: getTrackDescription(trackBox),
-		};
-
-		decoder.configure(config as VideoDecoderConfig);
-
-		for (const sample of samples) {
-			if (sample.data) {
-				decoder.decode(
-					new EncodedVideoChunk({
-						type: sample.is_sync ? "key" : "delta",
-
-						timestamp: (sample.cts * 1000000) / sample.timescale,
-
-						duration: (sample.duration * 1000000) / sample.timescale,
-
-						data: sample.data,
-					}),
-				);
-			}
-		}
-
-		await decoder.flush();
-
-		status.value = `Processing ${frames.length} frames...`;
-
-		const totalFrames = frames.length;
-
-		if (totalFrames === 0) {
-			const sampleCount = samples.length;
-
-			const firstSampleTime =
-				samples.length > 0
-					? (samples[0].cts * 1000000) / samples[0].timescale / 1000000
-					: "N/A";
-
-			throw new Error(
-				`No frames were decoded from the selected range. (Samples: ${sampleCount}, Start: ${startTime.value}, End: ${endTime.value}, First Sample: ${firstSampleTime}s). Try checking the console for more details.`,
-			);
-		}
-
-		for (let i = 0; i < frames.length; i++) {
-			const frame = frames[i];
+			const frame = new VideoFrame(video);
 			ctx.drawImage(frame, 0, 0, gifWidth, gifHeight);
+			frame.close();
+
 			const imageData = ctx.getImageData(0, 0, gifWidth, gifHeight);
 			const rgba = imageData.data;
-
-			// Quantize and apply palette for each frame
 			const palette = gifenc.quantize(rgba, 256);
 			const index = gifenc.applyPalette(rgba, palette);
 
 			writer.writeFrame(index, gifWidth, gifHeight, {
 				palette,
-				delay: 100, // 100ms
+				delay,
 				transparent: false,
 			});
 
-			frame.close();
 			progress.value = Math.round(((i + 1) / totalFrames) * 100);
 			if (i % 5 === 0) await new Promise((r) => setTimeout(r, 0));
 		}
@@ -279,35 +179,6 @@ const convertToGif = async () => {
 	} finally {
 		processing.value = false;
 	}
-};
-
-const getTrackDescription = (track: unknown) => {
-	if (!track) return undefined;
-	const t = track as {
-		mdia: {
-			minf: {
-				stbl: {
-					stsd: {
-						entries: {
-							avcC?: { write: (stream: MP4Box.DataStream) => void };
-							hvcC?: { write: (stream: MP4Box.DataStream) => void };
-							vpcC?: { write: (stream: MP4Box.DataStream) => void };
-							av1C?: { write: (stream: MP4Box.DataStream) => void };
-						}[];
-					};
-				};
-			};
-		};
-	};
-	const entry = t.mdia.minf.stbl.stsd.entries[0];
-	const box = entry.avcC || entry.hvcC || entry.vpcC || entry.av1C;
-	if (box) {
-		const stream = new MP4Box.DataStream();
-		stream.endianness = MP4Box.Endianness.BIG_ENDIAN;
-		box.write(stream);
-		return (stream as { buffer: ArrayBuffer }).buffer.slice(8);
-	}
-	return undefined;
 };
 </script>
 
