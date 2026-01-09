@@ -181,6 +181,14 @@ export const tools: Tool[] = [
 		category: "Graphics & Images",
 	},
 	{
+		path: "/video-clipper",
+		name: "Video Clipper",
+		icon: "🎬",
+		description: "Trim and shorten video files directly in the browser.",
+		component: () => import("./views/video-clipper.vue"),
+		category: "Graphics & Images",
+	},
+	{
 		path: "/ocr",
 		name: "OCR",
 		icon: "👁️",
