@@ -24,6 +24,7 @@
 		"budoux": "^0.7.0",
 		"codejar": "^4.3.0",
 		"comlink": "^4.4.2",
+		"gifenc": "^1.0.3",
 		"iconv-lite": "^0.7.1",
 		"just-bash": "^2.1.0",
 		"mathxyjax3": "^0.8.3",

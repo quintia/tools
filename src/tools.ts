@@ -189,6 +189,15 @@ export const tools: Tool[] = [
 		category: "Graphics & Images",
 	},
 	{
+		path: "/gif-converter",
+		name: "GIF Converter",
+		icon: "🎞️",
+		description:
+			"Convert video files to animated GIFs directly in the browser.",
+		component: () => import("./views/gif-converter.vue"),
+		category: "Graphics & Images",
+	},
+	{
 		path: "/ocr",
 		name: "OCR",
 		icon: "👁️",
