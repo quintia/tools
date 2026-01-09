@@ -1,24 +1,29 @@
 <script setup lang="ts">
-import { MagickFormat } from "@imagemagick/magick-wasm";
 import * as Comlink from "comlink";
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import DownloadLink from "../components/DownloadLink.vue";
 import FilePicker from "../components/FilePicker.vue";
 import LoadingOverlay from "../components/LoadingOverlay.vue";
 import PdfViewer from "../components/PdfViewer.vue";
 import ToolCard from "../components/ToolCard.vue";
 import ToolHeader from "../components/ToolHeader.vue";
-import type {
-	FormatOption,
-	ImagemagickWorker,
-} from "../workers/imagemagick-worker";
-import ImagemagickWorkerClass from "../workers/imagemagick-worker?worker";
 import type { MupdfWorker } from "../workers/mupdf-worker";
 import MupdfWorkerClass from "../workers/mupdf-worker?worker";
 
-const availableFormats = ref<FormatOption[]>([]);
-const targetFormat = ref<MagickFormat | null>(null);
-const loadingFormats = ref(false);
+export type FormatOption = {
+	label: string;
+	extension: string;
+	mimeType: string;
+};
+
+const availableFormats: FormatOption[] = [
+	{ label: "PNG", extension: "png", mimeType: "image/png" },
+	{ label: "JPEG", extension: "jpg", mimeType: "image/jpeg" },
+	{ label: "WebP", extension: "webp", mimeType: "image/webp" },
+];
+
+const targetFormat = ref<string>("image/png");
+const quality = ref<number>(0.9);
 
 const sourceBytes = ref<Uint8Array | null>(null);
 const sourcePdfBytes = ref<Uint8Array | null>(null);
@@ -27,7 +32,6 @@ const sourceName = ref<string>("");
 const sourceDetails = ref<{
 	width: number;
 	height: number;
-	format: MagickFormat;
 } | null>(null);
 const sourceError = ref("");
 
@@ -42,39 +46,18 @@ const result = ref<{
 } | null>(null);
 const conversionError = ref("");
 
-let imWorker: Worker | null = null;
-let imApi: Comlink.Remote<ImagemagickWorker> | null = null;
 let muWorker: Worker | null = null;
 let muApi: Comlink.Remote<MupdfWorker> | null = null;
 
 onMounted(async () => {
-	imWorker = new ImagemagickWorkerClass();
-	imApi = Comlink.wrap<ImagemagickWorker>(imWorker);
 	muWorker = new MupdfWorkerClass();
 	muApi = Comlink.wrap<MupdfWorker>(muWorker);
-	await loadFormats();
 });
-
-const loadFormats = async () => {
-	if (!imApi) return;
-	loadingFormats.value = true;
-	try {
-		const writable = await imApi.getWritableFormatOptions();
-		availableFormats.value = writable;
-		if (writable.length > 0) {
-			targetFormat.value = writable[0].format;
-		}
-	} catch (error) {
-		console.error("Failed to load formats", error);
-	} finally {
-		loadingFormats.value = false;
-	}
-};
 
 const readFile = async (event: Event) => {
 	const target = event.target as HTMLInputElement;
 	const file = target.files?.[0];
-	if (!file || !muApi || !imApi) return;
+	if (!file || !muApi) return;
 
 	sourceError.value = "";
 	if (result.value?.blobUrl) URL.revokeObjectURL(result.value.blobUrl);
@@ -103,64 +86,65 @@ const readFile = async (event: Event) => {
 
 	if (sourcePreview.value) URL.revokeObjectURL(sourcePreview.value);
 	sourcePreview.value = URL.createObjectURL(
-		new Blob([processBuffer as BlobPart], { type: "image/png" }),
+		new Blob([processBuffer as BlobPart], { type: file.type || "image/png" }),
 	);
 
-	try {
-		sourceDetails.value = await imApi.readMetadata(processBuffer);
-	} catch (error) {
+	const img = new Image();
+	img.onload = () => {
+		sourceDetails.value = {
+			width: img.width,
+			height: img.height,
+		};
+	};
+	img.onerror = () => {
 		sourceDetails.value = null;
-		sourceError.value =
-			error instanceof Error ? error.message : "Unable to read the image.";
-	}
+		sourceError.value = "Unable to read the image.";
+	};
+	img.src = sourcePreview.value;
 };
 
 const convert = async () => {
-	if (
-		!sourceBytes.value ||
-		!targetFormat.value ||
-		converting.value ||
-		!imApi ||
-		!muApi
-	)
-		return;
+	if (!sourcePreview.value || !targetFormat.value) return;
 	converting.value = true;
 	conversionError.value = "";
 
-	const option = availableFormats.value.find(
-		(f) => f.format === targetFormat.value,
-	);
+	const option = availableFormats.find((f) => f.mimeType === targetFormat.value);
 	if (!option) {
 		converting.value = false;
 		return;
 	}
 
 	try {
-		let converted: Uint8Array;
-		if (targetFormat.value === MagickFormat.Pdf) {
-			const pngBytes = await imApi.convert(sourceBytes.value, MagickFormat.Png);
-			converted = await muApi.imageToPdf(pngBytes, "image/png");
-		} else {
-			converted = await imApi.convert(sourceBytes.value, targetFormat.value);
-		}
+		const img = new Image();
+		await new Promise((resolve, reject) => {
+			img.onload = resolve;
+			img.onerror = reject;
+			img.src = sourcePreview.value;
+		});
 
-		const metadata =
-			targetFormat.value === MagickFormat.Pdf
-				? {
-						width: sourceDetails.value?.width || 0,
-						height: sourceDetails.value?.height || 0,
-					}
-				: await imApi.readMetadata(converted);
+		const canvas = document.createElement("canvas");
+		canvas.width = img.width;
+		canvas.height = img.height;
+		const ctx = canvas.getContext("2d");
+		if (!ctx) throw new Error("Failed to get canvas context");
+
+		ctx.drawImage(img, 0, 0);
+
+		const blob = await new Promise<Blob | null>((resolve) => {
+			canvas.toBlob((b) => resolve(b), option.mimeType, quality.value);
+		});
+
+		if (!blob) throw new Error("Failed to create blob");
 
 		if (result.value?.blobUrl) URL.revokeObjectURL(result.value.blobUrl);
 
-		const blob = new Blob([converted as BlobPart], { type: option.mimeType });
+		const convertedBytes = new Uint8Array(await blob.arrayBuffer());
 		result.value = {
 			option,
 			blobUrl: URL.createObjectURL(blob),
-			bytes: converted,
-			width: metadata.width,
-			height: metadata.height,
+			bytes: convertedBytes,
+			width: canvas.width,
+			height: canvas.height,
 			size: blob.size,
 		};
 	} catch (error) {
@@ -171,16 +155,22 @@ const convert = async () => {
 	}
 };
 
+let debounceTimeout: number | null = null;
+watch([sourcePreview, targetFormat, quality], () => {
+	if (debounceTimeout) clearTimeout(debounceTimeout);
+			debounceTimeout = window.setTimeout(
+				() => {
+					convert();
+				},
+				250, // Debounce for 250ms
+			);
+		},
+		{ immediate: false },
+	);
 onBeforeUnmount(() => {
 	if (sourcePreview.value) URL.revokeObjectURL(sourcePreview.value);
 	if (result.value?.blobUrl) URL.revokeObjectURL(result.value.blobUrl);
-	imWorker?.terminate();
 	muWorker?.terminate();
-});
-
-onBeforeUnmount(() => {
-	if (sourcePreview.value) URL.revokeObjectURL(sourcePreview.value);
-	if (result.value?.blobUrl) URL.revokeObjectURL(result.value.blobUrl);
 });
 
 const formatSize = (bytes: number) => {
@@ -193,15 +183,13 @@ const formatSize = (bytes: number) => {
 	}
 	return `${size.toFixed(1)} ${units[unitIndex]}`;
 };
-
-loadFormats();
 </script>
 
 <template>
   <div class="container py-4">
     <ToolHeader
       title="Image Convert"
-      description="Batch convert images between popular formats like PNG, JPEG, WebP, AVIF, and HEIC."
+      description="Convert images between popular formats like PNG, JPEG, and WebP using the browser's Canvas API."
     />
 
     <ToolCard title="Configuration" class="mb-4">
@@ -209,33 +197,28 @@ loadFormats();
         <div class="col-md-6">
           <FilePicker label="Input Image" accept="image/*,application/pdf" @change="readFile" />
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
           <label class="form-label fw-bold small">Target Format</label>
           <select
             v-model="targetFormat"
             class="form-select"
-            :disabled="loadingFormats || converting"
+            :disabled="converting"
           >
-            <option v-if="loadingFormats" value="">Detecting formats…</option>
-            <option v-for="option in availableFormats" :key="option.format" :value="option.format">
+            <option v-for="option in availableFormats" :key="option.mimeType" :value="option.mimeType">
               {{ option.label }} (.{{ option.extension }})
             </option>
           </select>
         </div>
-        <div class="col-md-2">
-          <button
-            class="btn btn-primary w-100"
-            type="button"
-            :disabled="!sourceBytes || converting"
-            @click="convert"
-          >
-            <span
-              v-if="converting"
-              class="spinner-border spinner-border-sm me-1"
-              role="status"
-            ></span>
-            Convert
-          </button>
+        <div class="col-md-3" v-if="targetFormat === 'image/jpeg' || targetFormat === 'image/webp'">
+          <label class="form-label fw-bold small">Quality ({{ (quality * 100).toFixed(0) }}%)</label>
+          <input
+            type="range"
+            class="form-range"
+            min="0"
+            max="1"
+            step="0.01"
+            v-model.number="quality"
+          />
         </div>
       </div>
     </ToolCard>
@@ -279,14 +262,11 @@ loadFormats();
             style="min-height: 300px"
           >
             <div v-if="result" class="w-100">
-              <PdfViewer v-if="result.option.format === MagickFormat.Pdf" :data="result.bytes" />
-              <template v-else>
-                <img
-                  :src="result.blobUrl"
-                  class="img-fluid mb-2 rounded shadow-sm"
-                  style="max-height: 400px"
-                />
-              </template>
+              <img
+                :src="result.blobUrl"
+                class="img-fluid mb-2 rounded shadow-sm"
+                style="max-height: 400px"
+              />
               <div class="text-muted small font-monospace mt-2">
                 {{ result.width }} × {{ result.height }} px | {{ formatSize(result.size) }}
               </div>
