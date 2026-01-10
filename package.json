@@ -25,7 +25,6 @@
 		"codejar": "^4.3.0",
 		"comlink": "^4.4.2",
 		"gifenc": "^1.0.3",
-		"iconv-lite": "^0.7.1",
 		"just-bash": "^2.1.0",
 		"mathxyjax3": "^0.8.3",
 		"mermaid": "^11.12.2",
@@ -44,9 +43,5 @@
 		"vue-router": "^4.6.4",
 		"vue-tsc": "^3.2.2",
 		"workbox-build": "^7.4.0"
-	},
-	"overrides": {
-		"magic-string": "^0.30.0",
-		"source-map": "^0.7.6"
 	}
 }
