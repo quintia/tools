@@ -100,9 +100,7 @@ const convertedFileName = computed(() => {
 
 const convertedSize = computed(() => convertedBinary.value?.length || 0);
 
-const hasPreview = computed(
-	() => decodedText.value.length > 0,
-);
+const hasPreview = computed(() => decodedText.value.length > 0);
 
 const formatBytes = (bytes: number) => {
 	if (bytes === 0) return "0 B";
@@ -146,8 +144,9 @@ const readAndConvert = async () => {
 };
 
 const downloadConvertedFile = () => {
-	if (!convertedBinary.value) return;
-	const blob = new Blob([convertedBinary.value], {
+	const data = convertedBinary.value;
+	if (!data) return;
+	const blob = new Blob([data as BlobPart], {
 		type: "text/plain;charset=utf-8",
 	});
 	const url = URL.createObjectURL(blob);

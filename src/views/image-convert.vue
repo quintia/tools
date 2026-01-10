@@ -108,7 +108,9 @@ const convert = async () => {
 	converting.value = true;
 	conversionError.value = "";
 
-	const option = availableFormats.find((f) => f.mimeType === targetFormat.value);
+	const option = availableFormats.find(
+		(f) => f.mimeType === targetFormat.value,
+	);
 	if (!option) {
 		converting.value = false;
 		return;
@@ -156,17 +158,19 @@ const convert = async () => {
 };
 
 let debounceTimeout: number | null = null;
-watch([sourcePreview, targetFormat, quality], () => {
-	if (debounceTimeout) clearTimeout(debounceTimeout);
-			debounceTimeout = window.setTimeout(
-				() => {
-					convert();
-				},
-				250, // Debounce for 250ms
-			);
-		},
-		{ immediate: false },
-	);
+watch(
+	[sourcePreview, targetFormat, quality],
+	() => {
+		if (debounceTimeout) clearTimeout(debounceTimeout);
+		debounceTimeout = window.setTimeout(
+			() => {
+				convert();
+			},
+			250, // Debounce for 250ms
+		);
+	},
+	{ immediate: false },
+);
 onBeforeUnmount(() => {
 	if (sourcePreview.value) URL.revokeObjectURL(sourcePreview.value);
 	if (result.value?.blobUrl) URL.revokeObjectURL(result.value.blobUrl);
